@@ -9,7 +9,7 @@ export const useConfigStore = defineStore('configStore', {
       showLeftPane: true,         // show left pane
       leftPaneWidth: 320,         // left pane width
       sidebarIndex: 0,            // toolbar index
-      maxLibraryCount: 10,        // max library count
+      maxLibraryCount: 20,        // max library count
     },
 
     content: {
@@ -23,7 +23,7 @@ export const useConfigStore = defineStore('configStore', {
     infoPanel: {
       show: false,               // show info panel
       width: 30,                 // info panel width(20-80%)
-      activeTab: 'info',         // active tab ('info', 'edit', 'dedup')
+      activeTab: 'info',         // active tab ('info', 'edit')
       showBasicInfo: true,       // show basic info
       showMetadata: true,        // show metadata
       showMap: true,             // show map
@@ -33,6 +33,13 @@ export const useConfigStore = defineStore('configStore', {
       showAdjust: true,          // show image adjustment
       showResize: true,          // show image resize
       showSaveOptions: true,     // show save options
+    },
+
+    dupPanel: {
+      show: false,               // show dedup panel
+      width: 30,                 // dedup panel width(20-80%)
+      activeTab: 'exact',        // active tab ('exact', 'similar')
+      keepStrategy: 'best_quality', // best_quality | oldest_created | oldest_modified
     },
 
     search: {
@@ -222,6 +229,10 @@ export const useConfigStore = defineStore('configStore', {
       } else {
         this.settings.face.clusterThresholdIndex = index;
       }
+    },
+
+    setDedupKeepStrategy(strategy) {
+      this.dupPanel.keepStrategy = strategy;
     },
   },
   persist: true

@@ -3,11 +3,7 @@ target/
 skills/
 .DS_Store
 .env
-dev.sh
-build_aarch64.sh
-build_x86_64.sh
+run.sh
 set_version.py
-sign_release.sh
-check_notarization.sh
-MACOS_SIGNING.md
 publish_release.sh
+

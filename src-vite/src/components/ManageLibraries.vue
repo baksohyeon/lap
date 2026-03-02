@@ -24,12 +24,15 @@
         <div 
           v-for="(lib, index) in libraries" 
           :key="lib.id"
-          class="flex items-center justify-between mx-1 px-1 h-12 rounded-box transition-colors group"
-          :class="{ 
-            'bg-base-100/30': editingId === lib.id,
-            'hover:bg-base-100/30': !showAddInput && !isRenaming, 
-            'opacity-50': showAddInput || (isRenaming && editingId !== lib.id) 
-          }"
+          :ref="(el) => setLibraryItemRef(el, lib.id)"
+          class="flex items-center justify-between mx-1 px-1 h-12 rounded-box group transition-all duration-200 ease-in-out"
+          :class="[
+            selectedLibraryId === lib.id
+              ? 'bg-base-100 hover:bg-base-100 selected-item'
+              : 'hover:bg-base-100/30',
+            showAddInput || (isRenaming && editingId !== lib.id) ? 'opacity-50' : 'cursor-pointer',
+          ]"
+          @click="selectLibrary(lib)"
         >
           <!-- Name & Info -->
           <div class="p-1 min-w-0 flex flex-col justify-center">
@@ -62,6 +65,10 @@
             <div class="text-xs text-base-content/30 truncate">
               <span v-if="libraryStats[lib.id]">
                 {{ $t('statusbar.files_summary', { count: libraryStats[lib.id].fileCount.toLocaleString(), size: formatFileSize(libraryStats[lib.id].totalSize) }) }}
+                {{ ', '  + $t('msgbox.manage_libraries.created_at_lower') + ' ' + formatTimestamp(lib.created_at, t('format.date_time')) }}
+              </span>
+              <span v-else-if="libraryStatsLoading[lib.id]">
+                {{ $t('msgbox.manage_libraries.calculating_stats') }}
                 {{ ', '  + $t('msgbox.manage_libraries.created_at_lower') + ' ' + formatTimestamp(lib.created_at, t('format.date_time')) }}
               </span>
             </div>
@@ -104,47 +111,60 @@
     </div>
 
     <!-- button area -->
-    <div class="flex justify-between items-center shrink-0 pt-2">
+    <div class="flex justify-between items-start shrink-0 pt-2 min-h-[64px]">
       <!-- Add New Library -->
-      <div class="flex items-center gap-2 p-2 w-2/3 rounded-box" :class="showAddInput ? ' border border-base-content/10' : 'border border-transparent'">
-        <TButton 
+      <div class="flex flex-col items-start justify-center p-2 w-2/3 min-h-[48px] rounded-box border border-transparent transition-colors" :class="showAddInput ? 'border-base-content/10 bg-base-100/20' : ''">
+        <button
           v-if="!showAddInput" 
-          :icon="IconAdd" 
-          :buttonSize="'medium'" 
-          :tooltip="isMaxLibraryReached ? $t('msgbox.manage_libraries.max_limit_reached') : $t('msgbox.manage_libraries.add_new')" 
+          class="inline-flex h-8 items-center gap-2 px-3 py-2 rounded-box border border-base-content/10 text-sm transition-colors"
+          :class="isMaxLibraryReached || isRenaming
+            ? 'text-base-content/30 cursor-default'
+            : 'text-base-content/70 hover:bg-base-100/30 hover:text-base-content cursor-pointer'"
+          :title="isMaxLibraryReached ? $t('msgbox.manage_libraries.max_limit_reached') : $t('msgbox.manage_libraries.add_new')"
           :disabled="isMaxLibraryReached || isRenaming"
           @click="showAddInput = true"
-        />
+        >
+          <IconAdd class="w-5 h-5" />
+          <span>{{ $t('msgbox.manage_libraries.add_new') }}</span>
+        </button>
         <template v-else>
-          <input
-            ref="addInputRef"
-            v-model="newLibraryName"
-            type="text"
-            class="input input-sm w-full"
-            maxlength="32"
-            :placeholder="$t('msgbox.manage_libraries.placeholder')"
-            @keydown.enter="doAddLibrary"
-            @keydown.esc.stop="showAddInput = false"
-          />
-          <div class="flex items-center gap-1">
-            <TButton
-              :icon="IconClose"
-              :tooltip="$t('msgbox.cancel')"
-              @click="showAddInput = false"
+          <div class="w-full flex min-h-8 items-center gap-2">
+            <input
+              ref="addInputRef"
+              v-model="newLibraryName"
+              type="text"
+              class="input input-sm flex-1 min-w-0"
+              maxlength="32"
+              :placeholder="$t('msgbox.manage_libraries.placeholder')"
+              :disabled="isAddingLibrary"
+              @keydown.enter="doAddLibrary"
+              @keydown.esc.stop="cancelAddLibrary"
             />
-            <TButton
-              :icon="IconOk"
-              :tooltip="$t('msgbox.manage_libraries.add')"
-              :disabled="!newLibraryName.trim()"
+            <button
+              class="px-3 py-1 rounded-box text-sm transition-colors shrink-0"
+              :class="isAddingLibrary ? 'text-base-content/30 cursor-default' : 'text-base-content/70 hover:bg-base-100/30 hover:text-base-content cursor-pointer'"
+              :disabled="isAddingLibrary"
+              @click="cancelAddLibrary"
+            >
+              {{ $t('msgbox.cancel') }}
+            </button>
+            <button
+              class="px-3 py-1 rounded-box text-sm transition-colors shrink-0"
+              :class="canSubmitNewLibrary ? 'bg-primary text-primary-content hover:opacity-90 cursor-pointer' : 'bg-base-100/40 text-base-content/30 cursor-default'"
+              :disabled="!canSubmitNewLibrary"
               @click="doAddLibrary"
-            />
+            >
+              {{ isAddingLibrary ? $t('tooltip.loading') : $t('msgbox.manage_libraries.add') }}
+            </button>
           </div>
         </template>
       </div>
-      <div v-if="inputErrorMessage" class="text-error text-xs mt-1 px-2">{{ inputErrorMessage }}</div>
+      <div class="w-0 flex-1 px-2 pt-1 text-error text-xs leading-5">
+        {{ inputErrorMessage }}
+      </div>
 
-      <button 
-        class="px-4 py-1 rounded-box hover:bg-primary hover:text-base-content cursor-pointer shrink-0" 
+      <button
+        class="mt-2 px-4 py-1 rounded-box hover:bg-primary hover:text-base-content cursor-pointer shrink-0"
         @click="clickClose"
       >
         {{ $t('msgbox.close') }}
@@ -179,7 +199,8 @@ import {
   removeLibrary, 
   hideLibrary, 
   reorderLibraries, 
-  getLibraryInfo 
+  getLibraryInfo,
+  switchLibrary,
 } from '@/common/api';
 import { formatTimestamp, isValidFileName, formatFileSize } from '@/common/utils';
 import ModalDialog from '@/components/ModalDialog.vue';
@@ -192,8 +213,6 @@ import {
   IconHide,
   IconUnhide,
   IconAdd,
-  IconOk,
-  IconClose,
 } from '@/common/icons';
 
 // Props are less relevant now but kept for compatibility logic if needed
@@ -215,8 +234,13 @@ const newLibraryName = ref('');
 const showAddInput = ref(false);
 const inputErrorMessage = ref('');
 const libraryStats = ref<Record<string, any>>({});
+const libraryStatsLoading = ref<Record<string, boolean>>({});
+const isAddingLibrary = ref(false);
+const selectedLibraryId = ref('');
+let statsLoadToken = 0;
 
 const isRenaming = computed(() => !!editingId.value);
+const canSubmitNewLibrary = computed(() => !!newLibraryName.value.trim() && !inputErrorMessage.value && !isAddingLibrary.value);
 
 const isMaxLibraryReached = computed(() => {
   const max = (config as any).main?.maxLibraryCount || 10;
@@ -230,10 +254,19 @@ const libraryToDelete = ref<any>(null);
 // Refs
 const addInputRef = ref<HTMLInputElement | null>(null);
 const editInputRefs = ref<Record<string, HTMLInputElement>>({});
+const libraryItemRefs = ref<Record<string, HTMLElement>>({});
 
 const setEditInputRef = (el: any, id: string) => {
   if (el) {
     editInputRefs.value[id] = el as HTMLInputElement;
+  }
+};
+
+const setLibraryItemRef = (el: any, id: string) => {
+  if (el) {
+    libraryItemRefs.value[id] = el as HTMLElement;
+  } else {
+    delete libraryItemRefs.value[id];
   }
 };
 
@@ -253,8 +286,7 @@ watch(showAddInput, (newValue) => {
     // Also focus input
     nextTick(() => addInputRef.value?.focus());
   } else {
-    newLibraryName.value = '';
-    inputErrorMessage.value = '';
+    cancelAddLibrary();
   }
 });
 
@@ -285,20 +317,62 @@ onUnmounted(() => {
 });
 
 const loadLibraries = async () => {
-  const config = await getAppConfig();
-  if (config) {
-    libraries.value = config.libraries || [];
-    currentLibraryId.value = config.current_library_id;
-    
-    // Lazy load stats (files count, size, path)
-    for (const lib of libraries.value) {
-       if (!libraryStats.value[lib.id]) {
-          getLibraryInfo(lib.id).then(info => {
-             if (info) libraryStats.value[lib.id] = info;
-          });
-       }
-    }
+  const appConfig = await getAppConfig();
+  if (!appConfig) return;
+
+  libraries.value = appConfig.libraries || [];
+  currentLibraryId.value = appConfig.current_library_id;
+  if (!selectedLibraryId.value || !libraries.value.some(lib => lib.id === selectedLibraryId.value)) {
+    selectedLibraryId.value = currentLibraryId.value;
   }
+  syncLibraryStatsState();
+
+  // Let the dialog render first, then compute each library's stats in the background.
+  window.requestAnimationFrame(() => {
+    void loadLibraryStats(libraries.value);
+  });
+};
+
+const syncLibraryStatsState = () => {
+  const validIds = new Set(libraries.value.map(lib => lib.id));
+  libraryStats.value = Object.fromEntries(
+    Object.entries(libraryStats.value).filter(([id]) => validIds.has(id))
+  );
+  libraryStatsLoading.value = Object.fromEntries(
+    Object.entries(libraryStatsLoading.value).filter(([id]) => validIds.has(id))
+  );
+};
+
+const loadLibraryStats = async (libs: any[]) => {
+  const loadToken = ++statsLoadToken;
+
+  libs.forEach((lib) => {
+    if (libraryStats.value[lib.id] || libraryStatsLoading.value[lib.id]) return;
+
+    libraryStatsLoading.value = {
+      ...libraryStatsLoading.value,
+      [lib.id]: true,
+    };
+
+    getLibraryInfo(lib.id)
+      .then((info) => {
+        if (loadToken !== statsLoadToken || !info) return;
+        libraryStats.value = {
+          ...libraryStats.value,
+          [lib.id]: info,
+        };
+      })
+      .catch((error) => {
+        console.error(error);
+      })
+      .finally(() => {
+        if (loadToken !== statsLoadToken) return;
+        libraryStatsLoading.value = {
+          ...libraryStatsLoading.value,
+          [lib.id]: false,
+        };
+      });
+  });
 };
 
 // --- Actions ---
@@ -344,7 +418,7 @@ const saveRename = async (lib: any) => {
 
 const doAddLibrary = async () => {
   const name = newLibraryName.value.trim();
-  if (!name) return;
+  if (!name || isAddingLibrary.value) return;
   
   if (!isValidFileName(name)) {
     inputErrorMessage.value = localeMsg.value.msgbox.input.file_name_invalid;
@@ -352,17 +426,43 @@ const doAddLibrary = async () => {
   }
 
   try {
+    isAddingLibrary.value = true;
     const newLib = await addLibrary(name);
     if (newLib) {
       newLibraryName.value = '';
       showAddInput.value = false;
       inputErrorMessage.value = '';
       await loadLibraries();
+      selectedLibraryId.value = newLib.id;
+      await focusLibrary(newLib.id);
       emit('ok', { type: 'add', library: newLib });
     }
   } catch (error: any) {
     inputErrorMessage.value = error.message || error.toString();
+  } finally {
+    isAddingLibrary.value = false;
   }
+};
+
+const cancelAddLibrary = () => {
+  if (isAddingLibrary.value) return;
+  showAddInput.value = false;
+  newLibraryName.value = '';
+  inputErrorMessage.value = '';
+};
+
+const focusLibrary = async (libraryId: string) => {
+  await nextTick();
+  libraryItemRefs.value[libraryId]?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'nearest',
+  });
+};
+
+const selectLibrary = async (lib: any) => {
+  if (showAddInput.value || isRenaming.value || editingId.value === lib.id) return;
+  selectedLibraryId.value = lib.id;
+  await focusLibrary(lib.id);
 };
 
 const toggleVisibility = async (lib: any) => {
@@ -394,8 +494,17 @@ const doDeleteLibrary = async () => {
   }
 };
 
-const clickClose = () => {
-  emit('cancel'); // Just close dialog
+const clickClose = async () => {
+  if (selectedLibraryId.value && selectedLibraryId.value !== currentLibraryId.value) {
+    try {
+      await switchLibrary(selectedLibraryId.value);
+      emit('ok', { type: 'switch', id: selectedLibraryId.value });
+    } catch (error) {
+      console.error(error);
+      return;
+    }
+  }
+  emit('cancel');
 };
 
 // --- Drag and Drop ---

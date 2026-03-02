@@ -208,13 +208,25 @@
     "tag_all": "标签",
     "dedup": {
       "title": "重复项",
+      "tabs": {
+        "exact": "完全相同",
+        "similar": "相似图片"
+      },
       "scanning": "扫描重复项中...",
       "empty_title": "当前列表没有潜在重复项",
       "empty_desc": "可以放宽筛选条件，或在其他文件列表中执行去重。",
+      "similar_title": "相似图片功能将在下一步提供",
+      "similar_desc": "这个标签页将用于视觉上相似的图片分组，当前先保留完全重复的清理流程。",
       "reclaimable_size": "可回收",
       "groups_title": "分组列表",
       "group_label": "分组 {index}",
       "items": "项",
+      "keep_strategy": "默认保留规则",
+      "keep_strategy_options": {
+        "best_quality": "最佳质量",
+        "oldest_created": "优先最早创建",
+        "oldest_modified": "优先最早修改"
+      },
       "keep_label": "保留",
       "select_group_duplicates": "选择所有重复项",
       "compare_group": "对比",
@@ -388,6 +400,7 @@
       "placeholder": "输入库的名称",
       "max_limit_reached": "已达到库数量限制",
       "created_at_lower": "创建于",
+      "calculating_stats": "正在计算库大小...",
       "library_file_path": "库文件路径",
       "library_file_size": "库文件大小",
       "created_at": "创建时间"

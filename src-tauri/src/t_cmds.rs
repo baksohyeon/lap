@@ -72,8 +72,10 @@ pub fn switch_library(id: &str) -> Result<(), String> {
 
 /// get library statistics
 #[tauri::command]
-pub fn get_library_info(id: &str) -> Result<LibraryInfo, String> {
-    t_config::get_library_info(id)
+pub async fn get_library_info(id: String) -> Result<LibraryInfo, String> {
+    tauri::async_runtime::spawn_blocking(move || t_config::get_library_info(&id))
+        .await
+        .map_err(|e| format!("Failed to join library info task: {}", e))?
 }
 
 /// save library state
@@ -768,8 +770,9 @@ pub fn dedup_start_scan(
     state: tauri::State<'_, crate::t_dedup::DedupState>,
     params: Option<crate::t_sqlite::QueryParams>,
     file_ids: Option<Vec<i64>>,
+    keep_strategy: Option<String>,
 ) -> Result<(), String> {
-    crate::t_dedup::start_scan(app_handle, state, params, file_ids)
+    crate::t_dedup::start_scan(app_handle, state, params, file_ids, keep_strategy)
 }
 
 #[tauri::command]

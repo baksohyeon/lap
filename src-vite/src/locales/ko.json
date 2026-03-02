@@ -215,6 +215,12 @@
       "groups_title": "그룹",
       "group_label": "그룹 {index}",
       "items": "개",
+      "keep_strategy": "Default keep rule",
+      "keep_strategy_options": {
+        "best_quality": "Best quality",
+        "oldest_created": "Prefer oldest created",
+        "oldest_modified": "Prefer oldest modified"
+      },
       "keep_label": "유지",
       "select_group_duplicates": "모든 중복 선택",
       "compare_group": "비교",
@@ -388,6 +394,7 @@
       "placeholder": "라이브러리 이름",
       "max_limit_reached": "제한 도달",
       "created_at_lower": "생성일",
+      "calculating_stats": "라이브러리 크기 계산 중...",
       "library_file_path": "파일 경로",
       "library_file_size": "파일 크기",
       "created_at": "생성일"

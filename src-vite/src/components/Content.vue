@@ -143,7 +143,7 @@
           <TButton
             :icon="IconSimilar"
             :tooltip="$t('toolbar.tooltip.open_dedup')"
-            :selected="config.infoPanel.show && config.infoPanel.activeTab === 'dedup'"
+            :selected="config.dupPanel.show"
             :disabled="isIndexing || showQuickView || fileList.length === 0"
             @click="toggleDedupPanel"
           />
@@ -151,7 +151,7 @@
           <TButton
             :icon="IconInformation"
             :tooltip="config.infoPanel.show ? $t('toolbar.tooltip.hide_info') : $t('toolbar.tooltip.show_info')"
-            :selected="config.infoPanel.show && config.infoPanel.activeTab !== 'dedup'"
+            :selected="config.infoPanel.show"
             :disabled="isIndexing"
             @click="toggleInfoPanel"
           />
@@ -311,13 +311,13 @@
       </div>
 
       <!-- info panel splitter -->
-      <div v-if="config.infoPanel.show && !uiStore.isFullScreen"
+      <div v-if="(config.infoPanel.show || config.dupPanel.show) && !uiStore.isFullScreen"
         class="w-1 shrink-0 transition-colors mt-12"
         :class="{
           'mb-8': config.settings.showStatusBar,
           'mb-1': !config.settings.showStatusBar,
-          'hover:bg-primary cursor-col-resize': config.infoPanel.show,
-          'bg-primary': config.infoPanel.show && isDraggingInfoPanel,
+          'hover:bg-primary cursor-col-resize': config.infoPanel.show || config.dupPanel.show,
+          'bg-primary': (config.infoPanel.show || config.dupPanel.show) && isDraggingInfoPanel,
         }" 
         @mousedown="startDraggingInfoPanelSplitter"
       ></div>
@@ -331,17 +331,17 @@
         leave-from-class="opacity-100"
         leave-to-class="!w-0 opacity-0"
       >
-        <div v-if="config.infoPanel.show && !uiStore.isFullScreen"
+        <div v-if="(config.infoPanel.show || config.dupPanel.show) && !uiStore.isFullScreen"
           :class="[ 'pt-12 pr-1', config.settings.showStatusBar ? 'pb-8' : 'pb-1' ]" 
-          :style="{ width: config.infoPanel.width + '%' }">
+          :style="{ width: activeRightPanelWidth + '%' }">
           <DedupPane
-            v-if="config.infoPanel.activeTab === 'dedup'"
+            v-if="config.dupPanel.show"
             :file-list="fileList"
             :selected-file-id="fileList[selectedItemIndex]?.id"
             :dedup-scan-key="dedupScanKey"
             :dedup-query-params="dedupQueryParams"
             :dedup-scope-file-ids="dedupScopeFileIds"
-            @close="checkUnsavedChanges(() => config.infoPanel.show = false)"
+            @close="config.dupPanel.show = false"
             @select-file="handleDedupSelectFile"
             @preview-file="handleDedupPreviewFile"
             @compare-group="handleDedupCompareGroup"
@@ -720,6 +720,7 @@ const errorMessage = ref('');
 const showUnsavedChangesMsgbox = ref(false);
 const pendingAction = ref<(() => void) | null>(null);
 const fileInfoRef = ref<any>(null);
+const activeRightPanelWidth = computed(() => config.dupPanel.show ? config.dupPanel.width : config.infoPanel.width);
 
 const confirmSave = async () => {
   showUnsavedChangesMsgbox.value = false;
@@ -1168,6 +1169,14 @@ function handleItemAction(payload: { action: string, index: number }) {
   const { action, index } = payload;
   selectedItemIndex.value = index; // Ensure the item for the action is selected
 
+  if (action.startsWith('rating-')) {
+    const rating = Number.parseInt(action.slice('rating-'.length), 10);
+    if (!Number.isNaN(rating)) {
+      void setSelectedFileRating(rating);
+    }
+    return;
+  }
+
   const actionMap = {
     'open': () => openImageViewer(selectedItemIndex.value, true),
     'edit': () => showImageEditor.value = true,
@@ -1454,6 +1463,7 @@ const handleKeyDown = (e: any) => {
   }
 
   const isCmdKey = isMac ? metaKey : e.payload.ctrlKey;
+  const ratingShortcut = Number.parseInt(key, 10);
 
   if (isCmdKey && key === 'Enter') {   // Open shortcut
     openImageViewer(selectedItemIndex.value, true);
@@ -1469,6 +1479,12 @@ const handleKeyDown = (e: any) => {
     clickTag();
   } else if (isCmdKey && key.toLowerCase() === 'r') {
     clickRename();
+  } else if (isCmdKey && Number.isInteger(ratingShortcut) && ratingShortcut >= 1 && ratingShortcut <= 5) {
+    if (selectMode.value) {
+      void selectModeSetRatings(ratingShortcut);
+    } else {
+      void setSelectedFileRating(ratingShortcut);
+    }
   } else if ((isMac && metaKey && key === 'Backspace') || (!isMac && key === 'Delete')) {
     openTrashMsgbox();
   } else if ((keyActions as any)[key]) {
@@ -2688,8 +2704,7 @@ const onCopyTo = async () => {
 const onTrashFile = async () => {
   const deletedFileIds: number[] = [];
   const shouldAdvanceDedup =
-    config.infoPanel.show &&
-    config.infoPanel.activeTab === 'dedup' &&
+    config.dupPanel.show &&
     !!dedupTrashGroupKey.value;
   const preDeleteGroups = shouldAdvanceDedup ? buildDuplicateGroups(fileList.value) : [];
   const currentDedupGroupKey = dedupTrashGroupKey.value;
@@ -3021,28 +3036,22 @@ const handleSortTypeSelect = (option: any, extendOption: any) => {
 const toggleInfoPanel = () => {
   checkUnsavedChanges(() => {
     if (config.infoPanel.show) {
-      if (config.infoPanel.activeTab === 'dedup') {
-        config.infoPanel.activeTab = 'info';
-      } else {
-        config.infoPanel.show = false;
-      }
+      config.infoPanel.show = false;
       return;
     }
-    if (config.infoPanel.activeTab === 'dedup') {
-      config.infoPanel.activeTab = 'info';
-    }
+    config.dupPanel.show = false;
     config.infoPanel.show = true;
   });
 };
 
 const toggleDedupPanel = () => {
   checkUnsavedChanges(() => {
-    if (config.infoPanel.show && config.infoPanel.activeTab === 'dedup') {
-      config.infoPanel.show = false;
+    if (config.dupPanel.show) {
+      config.dupPanel.show = false;
       return;
     }
-    config.infoPanel.activeTab = 'dedup';
-    config.infoPanel.show = true;
+    config.infoPanel.show = false;
+    config.dupPanel.show = true;
   });
 };
 
@@ -3427,7 +3436,12 @@ function handleMouseMove(event: MouseEvent) {
     const newWidthPercent = (newWidth * 100) / contentViewWidth;
 
     // Limit width between 20% and 80%
-    config.infoPanel.width = Math.min(Math.max(newWidthPercent, 20), 80);
+    const clampedWidth = Math.min(Math.max(newWidthPercent, 20), 80);
+    if (config.dupPanel.show) {
+      config.dupPanel.width = clampedWidth;
+    } else {
+      config.infoPanel.width = clampedWidth;
+    }
   }
 }
 

@@ -215,6 +215,12 @@
       "groups_title": "Groupes",
       "group_label": "Groupe {index}",
       "items": "éléments",
+      "keep_strategy": "Default keep rule",
+      "keep_strategy_options": {
+        "best_quality": "Best quality",
+        "oldest_created": "Prefer oldest created",
+        "oldest_modified": "Prefer oldest modified"
+      },
       "keep_label": "Conserver",
       "select_group_duplicates": "Sélectionner tous les doublons",
       "compare_group": "Comparer",
@@ -388,6 +394,7 @@
       "placeholder": "Nom bibliothèque",
       "max_limit_reached": "Limite atteinte",
       "created_at_lower": "créé le",
+      "calculating_stats": "Calcul de la taille de la bibliothèque...",
       "library_file_path": "Chemin fichier",
       "library_file_size": "Taille fichier",
       "created_at": "Créé le"

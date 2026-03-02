@@ -22,25 +22,78 @@
         >
           <!-- menu items -->
           <template v-for="(item, index) in resolvedMenuItems">
-            <button v-if="!item.hidden"
-              :class="[
-                item.label === '-' ? 'mx-2 my-1 border-t border-base-content/30' : 'w-full px-2 py-1 flex justify-between text-sm whitespace-nowrap',
-                item.disabled ? 'text-base-content/30' : 'hover:bg-base-100/30 hover:text-base-content hover:rounded-box cursor-pointer',
-              ]"
+            <div
+              v-if="!item.hidden"
               :key="index"
-              @click="handleClick(item)"
-            >      
-              <div v-if="item.label !== '-'" class="w-full flex items-center">
-                <div class="w-5">
-                  <component class="t-icon-size-sm" :is="item.icon" ></component>
+              class="relative"
+              @mouseenter="handleItemMouseEnter(index, item, $event)"
+              @mouseleave="handleItemMouseLeave(index)"
+            >
+              <div
+                v-if="item.label === '-'"
+                class="mx-2 my-1 border-t border-base-content/5"
+              />
+              <button
+                v-else
+                :class="[
+                  'w-full px-2 py-1 flex justify-between text-sm whitespace-nowrap',
+                  item.disabled ? 'text-base-content/30' : 'hover:bg-base-100/30 hover:text-base-content hover:rounded-box cursor-pointer',
+                ]"
+                @click="handleClick(item)"
+              >
+                <div class="w-full flex items-center">
+                  <div class="w-5">
+                    <component class="t-icon-size-sm" :is="item.icon" ></component>
+                  </div>
+                  <span class="ml-2 mr-4">{{ item.label }}</span>
+                  <span class="ml-auto text-base-content/30">{{ item.shortcut }}</span>
+                  <IconRight v-if="item.children?.length" class="ml-2 w-3 h-3 text-base-content/30" />
                 </div>
-                <span class="ml-2 mr-4">{{ item.label }}</span>
-                <span class="ml-auto text-base-content/30">{{ item.shortcut }}</span>
-              </div>
-            </button>
+              </button>
+            </div>
           </template>
         </div>
       </transition> 
+    </teleport>
+    <teleport to="body">
+      <transition name="fade">
+        <div
+          v-if="activeSubmenuItem?.children?.length"
+          ref="submenu"
+          class="menu fixed text-base-content/70 bg-base-200/80 backdrop-blur-md border border-base-content/30 rounded-box shadow-lg min-w-max z-[510]"
+          :style="submenuStyle"
+          @mouseenter="cancelSubmenuClose"
+          @mouseleave="scheduleSubmenuClose(activeSubmenuIndex)"
+        >
+          <template v-for="(child, childIndex) in activeSubmenuItem.children">
+            <div
+              v-if="!child.hidden"
+              :key="childIndex"
+            >
+              <div
+                v-if="child.label === '-'"
+                class="mx-2 my-1 border-t border-base-content/5"
+              />
+              <button
+                v-else
+                :class="[
+                  'w-full px-2 py-1 flex justify-between text-sm whitespace-nowrap',
+                  child.disabled ? 'text-base-content/30' : 'hover:bg-base-100/30 hover:text-base-content hover:rounded-box cursor-pointer',
+                ]"
+                @click="handleClick(child)"
+              >
+                <div class="w-full flex items-center">
+                  <div class="w-5">
+                    <component class="t-icon-size-sm" :is="child.icon" ></component>
+                  </div>
+                  <span class="ml-2 mr-4">{{ child.label }}</span>
+                  <span class="ml-auto text-base-content/30">{{ child.shortcut }}</span>
+                </div>
+              </button>
+            </div>
+          </template>
+        </div>
+      </transition>
     </teleport>
 
   </div>
@@ -51,6 +104,7 @@
 import { ref, shallowRef, onMounted, onBeforeUnmount, nextTick, useSlots, watch } from 'vue';
 
 import TButton from '@/components/TButton.vue';
+import { IconRight } from '@/common/icons';
 
 const slots = useSlots();
 
@@ -80,13 +134,18 @@ const props = defineProps({
 const resolvedMenuItems = shallowRef([]);
 
 // Emits
-const emit = defineEmits(['select']);
+const emit = defineEmits(['select', 'open-change']);
 
 // State
 const dropdown = ref(null);
 const menu = ref(null);
+const submenu = ref(null);
 const isDropDown = ref(false);
 const menuStyle = ref({});
+const submenuStyle = ref({});
+const activeSubmenuIndex = ref(null);
+const activeSubmenuItem = ref(null);
+let submenuCloseTimeout = null;
 
 // Add event listener when the component is mounted
 onMounted(() => {
@@ -97,16 +156,21 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('mousedown', handleClickOutside, { capture: true });
   document.removeEventListener('keydown', handleKeyDown);
+  cancelSubmenuClose();
 });
 
 // Watch for dropdown state to attach/detach listeners
 watch(isDropDown, (val) => {
+  emit('open-change', val);
   if (val) {
     document.addEventListener('mousedown', handleClickOutside, { capture: true });
     document.addEventListener('keydown', handleKeyDown);
   } else {
     document.removeEventListener('mousedown', handleClickOutside, { capture: true });
     document.removeEventListener('keydown', handleKeyDown);
+    activeSubmenuIndex.value = null;
+    activeSubmenuItem.value = null;
+    cancelSubmenuClose();
   }
 });
 
@@ -193,14 +257,115 @@ const toggleDropdown = async () => {
 
 // Close dropdown when clicking outside
 const handleClickOutside = (event) => {
-  if (dropdown.value && !dropdown.value.contains(event.target) && menu.value && !menu.value.contains(event.target)) {
+  if (
+    dropdown.value &&
+    !dropdown.value.contains(event.target) &&
+    menu.value &&
+    !menu.value.contains(event.target) &&
+    (!submenu.value || !submenu.value.contains(event.target))
+  ) {
     isDropDown.value = false;
   }
 };
 
+const positionSubmenu = async (targetEl) => {
+  await nextTick();
+  if (!submenu.value || !targetEl || !menu.value) return;
+
+  const buttonEl = targetEl.querySelector('button') || targetEl;
+  const parentButtonRect = buttonEl.getBoundingClientRect();
+  const menuRect = menu.value.getBoundingClientRect();
+  const submenuRect = submenu.value.getBoundingClientRect();
+  const padding = 8;
+  let left = menuRect.right - 4;
+  let top = parentButtonRect.top;
+
+  if (left + submenuRect.width > window.innerWidth - padding) {
+    left = menuRect.left - submenuRect.width + 4;
+  }
+
+  if (left < padding) {
+    left = padding;
+  }
+
+  if (top + submenuRect.height > window.innerHeight - padding) {
+    top = window.innerHeight - submenuRect.height - padding;
+  }
+
+  if (top < padding) {
+    top = padding;
+  }
+
+  submenuStyle.value = {
+    left: `${left}px`,
+    top: `${top}px`,
+  };
+
+  await nextTick();
+
+  const firstSubmenuButton = submenu.value?.querySelector('button');
+  if (firstSubmenuButton) {
+    const firstSubmenuButtonRect = firstSubmenuButton.getBoundingClientRect();
+    const offset = parentButtonRect.top - firstSubmenuButtonRect.top;
+    top += offset;
+
+    if (top + submenuRect.height > window.innerHeight - padding) {
+      top = window.innerHeight - submenuRect.height - padding;
+    }
+
+    if (top < padding) {
+      top = padding;
+    }
+  }
+
+  submenuStyle.value = {
+    left: `${left}px`,
+    top: `${top}px`,
+  };
+};
+
+const handleItemMouseEnter = (index, item, event) => {
+  cancelSubmenuClose();
+  activeSubmenuIndex.value = item.children?.length ? index : null;
+  if (item.children?.length) {
+    activeSubmenuItem.value = item;
+    void positionSubmenu(event.currentTarget);
+  } else {
+    activeSubmenuItem.value = null;
+  }
+};
+
+const handleItemMouseLeave = (index) => {
+  if (activeSubmenuIndex.value === index) {
+    scheduleSubmenuClose(index);
+  }
+};
+
+const scheduleSubmenuClose = (index) => {
+  cancelSubmenuClose();
+  submenuCloseTimeout = window.setTimeout(() => {
+    if (activeSubmenuIndex.value === index) {
+      activeSubmenuIndex.value = null;
+      activeSubmenuItem.value = null;
+    }
+    submenuCloseTimeout = null;
+  }, 180);
+};
+
+const cancelSubmenuClose = () => {
+  if (submenuCloseTimeout !== null) {
+    window.clearTimeout(submenuCloseTimeout);
+    submenuCloseTimeout = null;
+  }
+};
+
 const handleClick = (item) => {
+  if (item.children?.length) {
+    return;
+  }
   if (!item.disabled && item.action && typeof item.action === 'function') {
     item.action();
+    activeSubmenuItem.value = null;
     isDropDown.value = false;
   }
 };

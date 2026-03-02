@@ -4,6 +4,8 @@ import {
   IconImageEdit,
   IconHeart,
   IconHeartFilled,
+  IconStar,
+  IconStarFilled,
   IconTag,
   IconRotate,
   IconCopy,
@@ -110,9 +112,51 @@ export const useFileMenuItems = (
       { label: "-", action: null },
       {
         label: f.is_favorite ? localeMsg.value.menu.meta.unfavorite : localeMsg.value.menu.meta.favorite,
-        icon: f.is_favorite ? IconHeart : IconHeartFilled,
+        icon: IconHeart,
         shortcut: isMac ? '⌘F' : 'Ctrl+F',
         action: createAction('favorite')
+      },
+      {
+        label: localeMsg.value.favorite.ratings,
+        icon: IconStar,
+        children: [
+          {
+            label: localeMsg.value.favorite.clear_rating,
+            icon: IconStar,
+            action: createAction('rating-0')
+          },
+          { label: '-', action: null },
+          {
+            label: localeMsg.value.favorite.five_stars,
+            icon: Number(f.rating || 0) === 5 ? IconStarFilled : IconStar,
+            shortcut: isMac ? '⌘5' : 'Ctrl+5',
+            action: createAction('rating-5')
+          },
+          {
+            label: localeMsg.value.favorite.four_stars,
+            icon: Number(f.rating || 0) === 4 ? IconStarFilled : IconStar,
+            shortcut: isMac ? '⌘4' : 'Ctrl+4',
+            action: createAction('rating-4')
+          },
+          {
+            label: localeMsg.value.favorite.three_stars,
+            icon: Number(f.rating || 0) === 3 ? IconStarFilled : IconStar,
+            shortcut: isMac ? '⌘3' : 'Ctrl+3',
+            action: createAction('rating-3')
+          },
+          {
+            label: localeMsg.value.favorite.two_stars,
+            icon: Number(f.rating || 0) === 2 ? IconStarFilled : IconStar,
+            shortcut: isMac ? '⌘2' : 'Ctrl+2',
+            action: createAction('rating-2')
+          },
+          {
+            label: localeMsg.value.favorite.one_star,
+            icon: Number(f.rating || 0) === 1 ? IconStarFilled : IconStar,
+            shortcut: isMac ? '⌘1' : 'Ctrl+1',
+            action: createAction('rating-1')
+          },
+        ]
       },
       {
         label: localeMsg.value.menu.meta.tag,

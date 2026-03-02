@@ -215,6 +215,12 @@
       "groups_title": "Группы",
       "group_label": "Группа {index}",
       "items": "элементов",
+      "keep_strategy": "Default keep rule",
+      "keep_strategy_options": {
+        "best_quality": "Best quality",
+        "oldest_created": "Prefer oldest created",
+        "oldest_modified": "Prefer oldest modified"
+      },
       "keep_label": "Оставить",
       "select_group_duplicates": "Выбрать все дубликаты",
       "compare_group": "Сравнить",
@@ -388,6 +394,7 @@
       "placeholder": "Имя библиотеки",
       "max_limit_reached": "Лимит достигнут",
       "created_at_lower": "создано",
+      "calculating_stats": "Вычисляется размер библиотеки...",
       "library_file_path": "Путь к файлу",
       "library_file_size": "Размер файла",
       "created_at": "Создано"

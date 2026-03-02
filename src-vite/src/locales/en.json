@@ -208,13 +208,25 @@
     "tag_all": "Tag",
     "dedup": {
       "title": "Duplicates",
+      "tabs": {
+        "exact": "Exact",
+        "similar": "Similar"
+      },
       "scanning": "Scanning duplicates...",
       "empty_title": "No potential duplicates in this list",
       "empty_desc": "Try widening filters or running dedup on another file list.",
+      "similar_title": "Similar photos are coming next",
+      "similar_desc": "This tab will be used for visually similar images after the exact-duplicate workflow is expanded.",
       "reclaimable_size": "Reclaimable",
       "groups_title": "Groups",
       "group_label": "Group {index}",
       "items": "items",
+      "keep_strategy": "Default keep rule",
+      "keep_strategy_options": {
+        "best_quality": "Best quality",
+        "oldest_created": "Prefer oldest created",
+        "oldest_modified": "Prefer oldest modified"
+      },
       "keep_label": "Keep",
       "select_group_duplicates": "Select all duplicates",
       "compare_group": "Compare",
@@ -388,6 +400,7 @@
       "placeholder": "Enter library name",
       "max_limit_reached": "Library limit reached",
       "created_at_lower": "created at",
+      "calculating_stats": "Calculating library size...",
       "library_file_path": "Library file path",
       "library_file_size": "Library file size",
       "created_at": "Created at"

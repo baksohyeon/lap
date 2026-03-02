@@ -215,6 +215,12 @@
       "groups_title": "Grupos",
       "group_label": "Grupo {index}",
       "items": "itens",
+      "keep_strategy": "Default keep rule",
+      "keep_strategy_options": {
+        "best_quality": "Best quality",
+        "oldest_created": "Prefer oldest created",
+        "oldest_modified": "Prefer oldest modified"
+      },
       "keep_label": "Manter",
       "select_group_duplicates": "Selecionar todos os duplicados",
       "compare_group": "Comparar",
@@ -388,6 +394,7 @@
       "placeholder": "Nome da biblioteca",
       "max_limit_reached": "Limite atingido",
       "created_at_lower": "criado em",
+      "calculating_stats": "Calculando o tamanho da biblioteca...",
       "library_file_path": "Caminho do arquivo",
       "library_file_size": "Tamanho do arquivo",
       "created_at": "Criado em"

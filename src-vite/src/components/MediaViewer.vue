@@ -69,6 +69,22 @@
             :tooltip="file?.is_favorite ? $t('menu.meta.unfavorite') : $t('menu.meta.favorite')"
             @click="$emit('item-action', { action: 'favorite', index: fileIndex })"
           />
+          <ContextMenu
+            :menuItems="ratingMenuItems"
+            :disabled="fileIndex < 0 || isSlideShow"
+            @open-change="handleMenuOpenChange"
+            @click.stop
+          >
+            <template #trigger="{ toggle }">
+              <TButton
+                :icon="Number(file?.rating || 0) > 0 ? IconStarFilled : IconStar"
+                :disabled="fileIndex < 0 || isSlideShow"
+                :selected="Number(file?.rating || 0) > 0 && !isSlideShow"
+                :tooltip="ratingButtonTooltip"
+                @click.stop="toggle"
+              />
+            </template>
+          </ContextMenu>
           <TButton
             :icon="IconTag"
             :disabled="fileIndex < 0 || isSlideShow"
@@ -97,6 +113,7 @@
           :iconMenu="IconMore"
           :menuItems="singleFileMenuItems"
           :disabled="fileIndex < 0 || isSlideShow"
+          @open-change="handleMenuOpenChange"
           @click.stop
         />
         <IconSeparator v-if="mode !== 2" class="t-icon-size-sm text-base-content/30" />
@@ -157,6 +174,28 @@
     >
       <IconClose class="w-4 h-4" />
     </button>
+
+    <div
+      v-if="mode === 0 && quickViewStatusBadges.length > 0"
+      class="pointer-events-none absolute inset-x-0 top-0 z-80 h-16 bg-linear-to-b from-black/48 via-black/12 to-transparent"
+    />
+    <div
+      v-if="mode === 0 && quickViewStatusBadges.length > 0"
+      class="pointer-events-none absolute left-2 top-2 z-90 flex max-w-[calc(100%-4rem)] flex-wrap gap-1"
+    >
+      <div
+        v-for="badge in quickViewStatusBadges"
+        :key="badge.key"
+        :class="['thumb-badge', badge.highlight ? 'thumb-badge-highlight' : 'thumb-badge-muted']"
+      >
+        <component
+          v-if="badge.icon"
+          :is="badge.icon"
+          class="h-3.5 w-3.5 shrink-0"
+        />
+        <span v-if="badge.label" class="leading-none">{{ badge.label }}</span>
+      </div>
+    </div>
 
     <div class="flex-1 w-full min-h-0 relative" @dblclick="$emit('media-dblclick')">
       <Image v-if="file?.file_type === 1"
@@ -219,6 +258,8 @@ import {
   IconMore,
   IconHeart,
   IconHeartFilled,
+  IconStar,
+  IconStarFilled,
   IconTag,
   IconComment,
   IconRotate,
@@ -311,6 +352,7 @@ const isHoverRight = ref(false);
 const isHoverTop = ref(false);
 const isHoverBottom = ref(false);
 const toolbarPosition = ref<'top' | 'bottom'>('top');
+const hasOpenMenu = ref(false);
 
 // Responsive toolbar
 const containerWidth = ref(0);
@@ -324,6 +366,74 @@ const filenameMaxWidth = computed(() => {
   return 200; // Fallback
 });
 const showExtraIcons = computed(() => containerWidth.value > 600);
+const ratingButtonTooltip = computed(() => {
+  const rating = Number(props.file?.rating || 0);
+  return rating > 0 ? `${localeMsg.value.favorite.ratings}: ${rating}` : localeMsg.value.favorite.ratings;
+});
+const ratingMenuItems = computed(() => {
+  const rating = Number(props.file?.rating || 0);
+  return [
+    {
+      label: localeMsg.value.favorite.clear_rating,
+      icon: IconStar,
+      action: () => emit('item-action', { action: 'rating-0', index: props.fileIndex }),
+    },
+    { label: '-', action: null },
+    {
+      label: localeMsg.value.favorite.five_stars,
+      icon: rating === 5 ? IconStarFilled : IconStar,
+      shortcut: isMac ? '⌘5' : 'Ctrl+5',
+      action: () => emit('item-action', { action: 'rating-5', index: props.fileIndex }),
+    },
+    {
+      label: localeMsg.value.favorite.four_stars,
+      icon: rating === 4 ? IconStarFilled : IconStar,
+      shortcut: isMac ? '⌘4' : 'Ctrl+4',
+      action: () => emit('item-action', { action: 'rating-4', index: props.fileIndex }),
+    },
+    {
+      label: localeMsg.value.favorite.three_stars,
+      icon: rating === 3 ? IconStarFilled : IconStar,
+      shortcut: isMac ? '⌘3' : 'Ctrl+3',
+      action: () => emit('item-action', { action: 'rating-3', index: props.fileIndex }),
+    },
+    {
+      label: localeMsg.value.favorite.two_stars,
+      icon: rating === 2 ? IconStarFilled : IconStar,
+      shortcut: isMac ? '⌘2' : 'Ctrl+2',
+      action: () => emit('item-action', { action: 'rating-2', index: props.fileIndex }),
+    },
+    {
+      label: localeMsg.value.favorite.one_star,
+      icon: rating === 1 ? IconStarFilled : IconStar,
+      shortcut: isMac ? '⌘1' : 'Ctrl+1',
+      action: () => emit('item-action', { action: 'rating-1', index: props.fileIndex }),
+    },
+  ];
+});
+
+const quickViewStatusBadges = computed(() => {
+  const badges: Array<{ key: string; icon: any; label?: string; highlight?: boolean }> = [];
+  const rating = Number(props.file?.rating || 0);
+
+  if (props.file?.is_favorite) {
+    badges.push({
+      key: 'favorite',
+      icon: IconHeartFilled,
+      label: rating > 0 ? `${rating}` : undefined,
+      highlight: true,
+    });
+  } else if (rating > 0) {
+    badges.push({
+      key: 'rating',
+      icon: IconStarFilled,
+      label: `${rating}`,
+      highlight: true,
+    });
+  }
+
+  return badges;
+});
 let resizeObserver: ResizeObserver | null = null;
 
 onMounted(() => {
@@ -400,7 +510,7 @@ const computedToolbarClass = computed(() => {
     const floatingClasses = 'left-1/2 -translate-x-1/2 px-2 rounded-box bg-base-100/30 hover:bg-base-100/70 transition-[opacity,transform] duration-300 ease-in-out';
     
     if (toolbarPosition.value === 'bottom') {
-       if (isHoverBottom.value) {
+       if (isHoverBottom.value || hasOpenMenu.value) {
           if (props.file.file_type === 2) {
             return `${commonClasses} ${floatingClasses} bottom-8 opacity-100`;
           } else {
@@ -414,7 +524,7 @@ const computedToolbarClass = computed(() => {
           }
        }
     } else {
-       if (isHoverTop.value) {
+       if (isHoverTop.value || hasOpenMenu.value) {
           return `${commonClasses} ${floatingClasses} top-4 opacity-100`;
        } else {
           return `${commonClasses} ${floatingClasses} top-4 opacity-0`;
@@ -422,6 +532,10 @@ const computedToolbarClass = computed(() => {
     }
   }
 });
+
+const handleMenuOpenChange = (isOpen: boolean) => {
+  hasOpenMenu.value = isOpen;
+};
 
 // Expose methods for parent component (ImageViewer)
 const zoomIn = () => mediaRef.value?.zoomIn();

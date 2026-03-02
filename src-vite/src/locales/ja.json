@@ -215,6 +215,12 @@
       "groups_title": "グループ",
       "group_label": "グループ {index}",
       "items": "件",
+      "keep_strategy": "Default keep rule",
+      "keep_strategy_options": {
+        "best_quality": "Best quality",
+        "oldest_created": "Prefer oldest created",
+        "oldest_modified": "Prefer oldest modified"
+      },
       "keep_label": "保持",
       "select_group_duplicates": "すべての重複を選択",
       "compare_group": "比較",
@@ -388,6 +394,7 @@
       "placeholder": "ライブラリ名",
       "max_limit_reached": "上限に達しました",
       "created_at_lower": "作成日時",
+      "calculating_stats": "ライブラリサイズを計算中...",
       "library_file_path": "ファイルパス",
       "library_file_size": "ファイルサイズ",
       "created_at": "作成日時"
