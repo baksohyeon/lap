@@ -861,7 +861,10 @@
         "build_time": "ビルド日時",
         "author": "作者",
         "license": "ライセンス",
-        "website": "ウェブサイト"
+        "link": "リンク",
+        "website": "ウェブサイト",
+        "github": "GitHub",
+        "privacy": "プライバシー"
       },
       "auto_update": {
         "update": "更新",

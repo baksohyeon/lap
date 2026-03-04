@@ -867,7 +867,10 @@
         "build_time": "构建时间",
         "author": "作者",
         "license": "许可证",
-        "website": "网站"
+        "link": "链接",
+        "website": "网站",
+        "github": "GitHub",
+        "privacy": "隐私"
       },
       "auto_update": {
         "update": "更新",

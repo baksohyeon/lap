@@ -1,56 +1,80 @@
 <template>
-  <div class="flex flex-col items-center justify-start p-2 gap-4 text-center h-full text-base-content/70 cursor-default">
-    
-    <!-- App Header -->
-    <div class="px-4 flex flex-row items-center justify-start gap-4">
-      <!-- App Logo -->
+  <div class="flex flex-col items-start justify-start p-2 gap-4 h-full text-base-content/70 cursor-default">
+    <div class="px-4 flex w-full flex-row items-center justify-start gap-4">
       <div class="shrink-0">
         <img src="@/assets/images/logo.png" class="w-24 h-24 mx-auto rounded-box drop-shadow-lg" />
       </div>
-      <div class="flex flex-col">
+      <div class="flex flex-col text-left">
         <h3 class="text-xl font-bold">{{ packageInfo.name }}</h3>
         <p class="mt-2">{{ packageInfo.description }}</p>
       </div>
     </div>
 
-    <!-- Info Grid -->
-    <div class="w-full max-w-md text-base-content/30 bg-base-200/30 rounded-lg p-4">
-      <div class="grid grid-cols-[100px_1fr] gap-4 text-left text-sm">
-        
-        <div class="font-semibold">{{ $t('settings.about.package.version') }}</div>
-        <div class="font-mono">{{ packageInfo.version }}</div>
-
-        <div class="font-semibold">{{ $t('settings.about.package.build_time') }}</div>
-        <div>{{ buildTime }}</div>
-
-        <div class="font-semibold">{{ $t('settings.about.package.license') }}</div>
-        <div>{{ packageInfo.license }}</div>
-
-        <div class="font-semibold">{{ $t('settings.about.package.author') }}</div>
-        <div>{{ packageInfo.authors && packageInfo.authors[0] }}</div>
-
-        <div class="font-semibold">{{ $t('settings.about.package.website') }}</div>
-        <div>
-          <a :href="packageInfo.homepage" target="_blank" class="link hover:text-primary-focus">
-            {{ packageInfo.homepage }}
-          </a>
+    <div class="w-full max-w-lg rounded-box border border-base-content/5 bg-base-300/30 p-4 shadow-sm">
+      <div class="grid grid-cols-2 gap-3 text-left">
+        <div class="rounded-box bg-base-100/35 px-3 py-2">
+          <div class="text-[10px] font-bold uppercase tracking-widest text-base-content/25">
+            {{ $t('settings.about.package.version') }}
+          </div>
+          <div class="mt-1 font-mono text-sm font-semibold text-base-content/70">{{ packageInfo.version }}</div>
         </div>
 
-        <!-- <div class="font-semibold">GitHub</div>
-        <div>
-          <a :href="packageInfo.repository" target="_blank" class="link hover:text-primary-focus">
-            {{ packageInfo.repository }}
-          </a>
-        </div> -->
+        <div class="rounded-box bg-base-100/35 px-3 py-2">
+          <div class="text-[10px] font-bold uppercase tracking-widest text-base-content/25">
+            {{ $t('settings.about.package.build_time') }}
+          </div>
+          <div class="mt-1 text-sm font-semibold text-base-content/70">{{ buildTime }}</div>
+        </div>
+      </div>
 
+      <div class="mt-4 space-y-3 text-left">
+        <div class="grid grid-cols-[84px_1fr] items-start gap-3 text-sm">
+          <div class="text-[10px] font-bold uppercase tracking-widest text-base-content/25">
+            {{ $t('settings.about.package.license') }}
+          </div>
+          <div class="font-semibold text-base-content/65">{{ packageInfo.license }}</div>
+        </div>
+
+        <div class="grid grid-cols-[84px_1fr] items-center gap-1 text-sm">
+          <div class="text-[10px] font-bold uppercase tracking-widest text-base-content/25">
+            {{ $t('settings.about.package.link') }}
+          </div>
+          <div class="flex items-center justify-start gap-2">
+            <a
+              :href="packageInfo.homepage"
+              target="_blank"
+              class="inline-flex items-center gap-1.5 rounded-box px-2 py-1 text-xs font-semibold text-base-content/55 transition-colors hover:bg-base-100/50 hover:text-primary"
+            >
+              <IconLink class="t-icon-size-sm" />
+              <span>{{ $t('settings.about.package.website') }}</span>
+            </a>
+            <a
+              :href="packageInfo.repository"
+              target="_blank"
+              class="inline-flex items-center gap-1.5 rounded-box px-2 py-1 text-xs font-semibold text-base-content/55 transition-colors hover:bg-base-100/50 hover:text-primary"
+            >
+              <IconGithub class="t-icon-size-sm" />
+              <span>{{ $t('settings.about.package.github') }}</span>
+            </a>
+            <a
+              :href="privacyUrl"
+              target="_blank"
+              class="inline-flex items-center gap-1.5 rounded-box px-2 py-1 text-xs font-semibold text-base-content/55 transition-colors hover:bg-base-100/50 hover:text-primary"
+            >
+              <IconLock class="t-icon-size-sm" />
+              <span>{{ $t('settings.about.package.privacy') }}</span>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { getPackageInfo, getBuildTime } from '@/common/api';
+import { IconGithub, IconLink, IconLock } from '@/common/icons';
 
 const packageInfo = ref<any>({
   name: '',
@@ -58,9 +82,15 @@ const packageInfo = ref<any>({
   version: '',
   license: '',
   authors: [],
-  homepage: ''
+  homepage: '',
+  repository: ''
 });
 const buildTime = ref('');
+const privacyUrl = computed(() => {
+  const repo = packageInfo.value.repository || '';
+  if (!repo) return 'https://github.com/julyx10/lap/blob/main/PRIVACY.md';
+  return repo.endsWith('/') ? `${repo}blob/main/PRIVACY.md` : `${repo}/blob/main/PRIVACY.md`;
+});
 
 onMounted(async () => {
   try {

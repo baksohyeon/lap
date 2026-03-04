@@ -861,7 +861,10 @@
         "build_time": "Время сборки",
         "author": "Автор",
         "license": "Лицензия",
-        "website": "Сайт"
+        "link": "Ссылки",
+        "website": "Сайт",
+        "github": "GitHub",
+        "privacy": "Конфиденциальность"
       },
       "auto_update": {
         "update": "Обновить",

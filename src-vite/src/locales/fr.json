@@ -861,7 +861,10 @@
         "build_time": "Date build",
         "author": "Auteur",
         "license": "Licence",
-        "website": "Site web"
+        "link": "Lien",
+        "website": "Site web",
+        "github": "GitHub",
+        "privacy": "Confidentialite"
       },
       "auto_update": {
         "update": "Mettre à jour",

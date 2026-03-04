@@ -16,6 +16,7 @@ It helps you organize and explore your collection in practical ways, while keepi
 - Website: [https://julyx10.github.io/lap/](https://julyx10.github.io/lap/)
 - Demo video: [https://youtu.be/niMD1tTzS24](https://youtu.be/niMD1tTzS24)
 - Releases: [https://github.com/julyx10/lap/releases](https://github.com/julyx10/lap/releases)
+- Privacy: [PRIVACY.md](PRIVACY.md)
 
 ## Why Lap
 
