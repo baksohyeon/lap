@@ -71,6 +71,10 @@ fn main() {
                 .into());
             }
 
+            if let Err(e) = t_utils::restore_album_scopes(&_app.handle()) {
+                eprintln!("Failed to restore asset scopes: {}", e);
+            }
+
             // Initialize AI Engine
             let app_handle = _app.handle();
             let ai_state = _app.state::<t_ai::AiState>();

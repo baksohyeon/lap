@@ -173,6 +173,26 @@ impl FileInfo {
     }
 }
 
+pub fn authorize_directory_scope(
+    app_handle: &tauri::AppHandle,
+    dir_path: &str,
+) -> Result<(), String> {
+    app_handle
+        .state::<tauri::Scopes>()
+        .allow_directory(dir_path, true)
+        .map_err(|e| format!("Failed to authorize directory '{}': {}", dir_path, e))
+}
+
+pub fn restore_album_scopes(app_handle: &tauri::AppHandle) -> Result<(), String> {
+    let albums = Album::get_all_albums()?;
+
+    for album in albums {
+        authorize_directory_scope(app_handle, &album.path)?;
+    }
+
+    Ok(())
+}
+
 /// create a new folder at a given path
 /// Returns the folder path if successful
 pub fn create_new_folder(folder_path: &str) -> Option<String> {

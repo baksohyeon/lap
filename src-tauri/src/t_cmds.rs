@@ -65,9 +65,10 @@ pub fn remove_library(id: &str) -> Result<(), String> {
 
 /// switch to a different library
 #[tauri::command]
-pub fn switch_library(id: &str) -> Result<(), String> {
+pub fn switch_library(app_handle: tauri::AppHandle, id: &str) -> Result<(), String> {
     t_config::switch_library(id)?;
-    t_sqlite::create_db()
+    t_sqlite::create_db()?;
+    t_utils::restore_album_scopes(&app_handle)
 }
 
 /// get library statistics
@@ -112,9 +113,11 @@ pub fn get_album(album_id: i64) -> Result<Album, String> {
 
 /// add an album
 #[tauri::command]
-pub fn add_album(folder_path: &str) -> Result<Album, String> {
-    Album::add_album_to_db(folder_path)
-        .map_err(|e| format!("Error while adding an album to DB: {}", e))
+pub fn add_album(app_handle: tauri::AppHandle, folder_path: &str) -> Result<Album, String> {
+    t_utils::authorize_directory_scope(&app_handle, folder_path)
+        .map_err(|e| format!("Error while authorizing album folder '{}': {}", folder_path, e))?;
+
+    Album::add_album_to_db(folder_path).map_err(|e| format!("Error while adding an album to DB: {}", e))
 }
 
 /// edit an album
@@ -182,7 +185,14 @@ pub fn cancel_indexing(state: State<IndexCancellation>, album_id: i64) -> Result
 
 // click to select a sub-folder under an album
 #[tauri::command]
-pub fn select_folder(album_id: i64, folder_path: &str) -> Result<AFolder, String> {
+pub fn select_folder(
+    app_handle: tauri::AppHandle,
+    album_id: i64,
+    folder_path: &str,
+) -> Result<AFolder, String> {
+    t_utils::authorize_directory_scope(&app_handle, folder_path)
+        .map_err(|e| format!("Error while authorizing folder '{}': {}", folder_path, e))?;
+
     AFolder::add_to_db(album_id, folder_path)
         .map_err(|e| format!("Error while adding folder to DB: {}", e))
 }
