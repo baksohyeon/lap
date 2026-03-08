@@ -219,6 +219,7 @@ const isZoomFit = ref(false);               // Zoom to fit image in container
 // image
 const activeImage = ref(1);                 // which image is active (0 or 1)
 const imageSrc = ref(['', '']);             // image source
+const imageFilePath = ref(['', '']);        // source file path for each buffer image
 const position = shallowRef([{ x: 0, y: 0 }, { x: 0, y: 0 }]); // Image position (top-left corner)
 const scale = ref([1, 1]);                  // Image scale (zoom level)
 const minScale = ref(0.1);                    // Minimum zoom level
@@ -801,6 +802,7 @@ watch(() => props.filePath, async (newFilePath) => {
       position.value[nextImageIndex] = { x: 0, y: 0 };
 
       imageSrc.value[nextImageIndex] = loaded.src;
+      imageFilePath.value[nextImageIndex] = newFilePath;
       imageRotate.value[nextImageIndex] = props.rotate;
       imageSize.value[nextImageIndex] = {
         width: loaded.naturalWidth,
@@ -856,7 +858,18 @@ watch(() => [props.fileId, config.settings.face.enabled], async ([newFileId, fac
 
 // watch rotate changes
 watch(() => props.rotate, (newRotate) => {
-  imageRotate.value[activeImage.value] = newRotate;
+  const activeIndex = activeImage.value;
+  const inactiveIndex = activeIndex ^ 1;
+  const currentFilePath = props.filePath || '';
+
+  // Update only the buffer(s) that actually render the current file.
+  // This avoids mutating the leaving slide during navigation.
+  if (imageFilePath.value[activeIndex] === currentFilePath) {
+    imageRotate.value[activeIndex] = newRotate;
+  }
+  if (imageFilePath.value[inactiveIndex] === currentFilePath) {
+    imageRotate.value[inactiveIndex] = newRotate;
+  }
 });
 
 watch(() => imageRotate.value[activeImage.value], (newValue) => {

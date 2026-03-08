@@ -56,21 +56,36 @@
           <div v-if="showBasicInfoPanel" class="grid grid-cols-[80px_1fr] gap-y-3 gap-x-4 text-xs overflow-hidden">
             <!-- Name -->
             <div class="text-[10px] uppercase tracking-widest font-bold text-base-content/25 py-1">{{ $t('file_info.name') }}</div>
-            <div class="flex items-center">
-              <input 
+            <div class="group flex items-center gap-1">
+              <div
                 v-if="isRenaming"
-                ref="renameInputRef"
-                v-model="renamingName" 
-                class="font-bold text-xs text-base-content input input-xs input-bordered p-1 h-6 leading-6 w-full"
-                @blur="finishRename"
-                @keydown.enter="finishRename"
-                @keydown.esc="cancelRename"
-                @click.stop
-              />
+                class="flex items-center w-full min-w-0"
+              >
+                <input
+                  ref="renameInputRef"
+                  v-model="renamingName"
+                  class="font-bold text-xs text-base-content input input-xs input-bordered p-1 h-6 leading-6 w-full min-w-0"
+                  @blur="finishRename"
+                  @keydown.enter="finishRename"
+                  @keydown.esc="cancelRename"
+                  @click.stop
+                />
+                <span
+                  v-if="renamingExt"
+                  class="ml-1 text-xs font-semibold text-base-content/45 whitespace-nowrap"
+                >.{{ renamingExt }}</span>
+              </div>
               <span v-else 
-                class="font-semibold text-xs text-base-content/65 break-all cursor-text hover:bg-base-content/10 rounded px-1 -mx-1 transition-colors"
-                @click.stop="startRename"
+                class="font-semibold text-xs text-base-content/65 break-all flex-1 min-w-0"
               >{{ fileInfo?.name }}</span>
+              <TButton
+                v-if="!isRenaming"
+                :icon="IconEdit"
+                :tooltip="$t('menu.file.rename')"
+                :buttonSize="'small'"
+                :class="['opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out']"
+                @click.stop="startRename"
+              />
             </div>
 
             <!-- Album -->
@@ -79,7 +94,29 @@
 
             <!-- Path -->
             <div class="text-[10px] uppercase tracking-widest font-bold text-base-content/25">{{ $t('file_info.folder') }}</div>
-            <div class="text-xs font-semibold text-base-content/65 break-all">{{ getFolderPath(fileInfo?.file_path) }}</div>
+            <div class="flex items-center gap-1 min-w-0">
+              <IconFolderExpanded class="w-3.5 h-3.5 shrink-0 text-base-content/65" />
+              <div class="breadcrumbs p-0 min-h-0 overflow-hidden min-w-0">
+                <ul class="min-w-0 flex-nowrap overflow-hidden">
+                <li
+                  v-for="(item, idx) in folderBreadcrumbs"
+                  :key="`${item.path}-${idx}`"
+                  class="min-w-0 max-w-full overflow-hidden"
+                >
+                  <a
+                    v-if="idx < folderBreadcrumbs.length - 1"
+                    class="block max-w-48 truncate cursor-pointer transition-colors text-xs font-semibold text-base-content/65 hover:text-base-content"
+                    @click.stop="emit('navigateFolder', item.path)"
+                  >{{ item.label }}</a>
+                  <span
+                    v-else
+                    class="block max-w-48 truncate text-xs font-semibold text-base-content/65 cursor-pointer hover:text-base-content"
+                    @click.stop="emit('navigateFolder', item.path)"
+                  >{{ item.label }}</span>
+                </li>
+                </ul>
+              </div>
+            </div>
 
             <!-- Size -->
             <div class="text-[10px] uppercase tracking-widest font-bold text-base-content/25">{{ $t('file_info.size') }}</div>
@@ -134,11 +171,15 @@
             </div>
 
             <!-- Tags -->
-            <div class="text-[10px] uppercase tracking-widest font-bold text-base-content/25">{{ $t('file_info.tags') }}</div>
-            <div class="group flex items-start gap-1">
+            <div class="text-[10px] uppercase tracking-widest font-bold text-base-content/25 py-1">{{ $t('file_info.tags') }}</div>
+            <div class="group flex items-center min-h-6 gap-1">
               <div class="text-xs font-semibold text-base-content/65 flex flex-wrap gap-1 flex-1 min-w-0">
                 <template v-if="fileInfo?.tags && fileInfo.tags.length">
-                  <span v-for="tag in fileInfo.tags" :key="tag.id" class="badge badge-sm badge-ghost font-medium">{{ tag.name }}</span>
+                  <span
+                    v-for="tag in fileInfo.tags"
+                    :key="tag.id"
+                    class="badge badge-sm badge-outline border-base-content/30 bg-base-content/30 font-medium"
+                  >{{ tag.name }}</span>
                 </template>
               </div>
               <TButton
@@ -267,15 +308,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, computed } from 'vue';
+import { ref, nextTick, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@/stores/uiStore';
 import { config } from '@/common/config';
-import { renameFile, editImage } from '@/common/api';
+import { renameFile, editImage, getAlbum } from '@/common/api';
 import { 
   extractFileName, 
   getFileExtension,
   getFolderPath, 
+  getFolderName,
+  separator,
   formatDimensionText, 
   formatFileSize, 
   formatTimestamp,
@@ -288,8 +331,9 @@ import {
 } from '@/common/utils';
 import { 
   IconClose, IconLocation, IconArrowDown, IconArrowUp, IconCameraAperture, 
-  IconFile, IconHeart, IconHeartFilled, IconStar, IconStarFilled, IconEdit,
+  IconFile, IconFolderSearch, IconHeart, IconHeartFilled, IconStar, IconStarFilled, IconEdit,
   IconMapSizeExpand, IconMapSizeRestore,
+  IconFolderExpanded,
 } from '@/common/icons';
 import TButton from '@/components/TButton.vue';
 import ToolTip from '@/components/ToolTip.vue';
@@ -314,6 +358,7 @@ const emit = defineEmits([
   'setRating',
   'quickEditTag',
   'quickEditComment',
+  'navigateFolder',
 ]);
 
 const toolTipRef = ref<InstanceType<typeof ToolTip> | null>(null);
@@ -415,13 +460,69 @@ const quickSave = async (): Promise<boolean> => {
 // Rename logic
 const isRenaming = ref(false);
 const renamingName = ref('');
+const renamingExt = ref('');
 const renameInputRef = ref<HTMLInputElement | null>(null);
+const albumRootPath = ref('');
+let albumRootRequestSeq = 0;
+
+function normalizePathForCompare(path: string): string {
+  if (!path) return '';
+  const unified = separator === '\\'
+    ? path.replace(/\//g, '\\')
+    : path.replace(/\\/g, '/');
+  const trimmed = unified.replace(/[\\/]+$/, '');
+  return separator === '\\' ? trimmed.toLowerCase() : trimmed;
+}
+
+function isWithinRootPath(path: string, rootPath: string): boolean {
+  const normalizedPath = normalizePathForCompare(path);
+  const normalizedRoot = normalizePathForCompare(rootPath);
+  if (!normalizedPath || !normalizedRoot) return false;
+  return normalizedPath === normalizedRoot || normalizedPath.startsWith(`${normalizedRoot}${separator}`);
+}
+
+const folderBreadcrumbs = computed(() => {
+  const folderPath = getFolderPath(props.fileInfo?.file_path);
+  if (!folderPath) return [];
+
+  const rootPath = albumRootPath.value;
+  if (!rootPath || !isWithinRootPath(folderPath, rootPath)) {
+    return [{ label: getFolderName(folderPath), path: folderPath }];
+  }
+
+  const normalizedRootPath = rootPath.replace(/[\\/]+$/, '');
+  const items: Array<{ label: string; path: string }> = [
+    { label: getFolderName(normalizedRootPath), path: normalizedRootPath }
+  ];
+  const relative = folderPath.slice(normalizedRootPath.length).split(separator).filter(Boolean);
+  let currentPath = normalizedRootPath;
+  for (const segment of relative) {
+    currentPath = `${currentPath}${separator}${segment}`;
+    items.push({ label: segment, path: currentPath });
+  }
+  return items;
+});
+
+watch(
+  () => props.fileInfo?.album_id,
+  async (albumId) => {
+    const requestSeq = ++albumRootRequestSeq;
+    albumRootPath.value = '';
+    if (!albumId) return;
+    const album = await getAlbum(albumId);
+    if (requestSeq !== albumRootRequestSeq) return;
+    if (props.fileInfo?.album_id !== albumId) return;
+    albumRootPath.value = album?.path || '';
+  },
+  { immediate: true }
+);
 
 const startRename = () => {
   if (!props.fileInfo) return;
   
-  const { name } = extractFileName(props.fileInfo.name);
+  const { name, ext } = extractFileName(props.fileInfo.name);
   renamingName.value = name;
+  renamingExt.value = ext;
   isRenaming.value = true;
   uiStore.pushInputHandler('FileInfo-rename');
   
@@ -435,6 +536,7 @@ const startRename = () => {
 
 const cancelRename = () => {
   isRenaming.value = false;
+  renamingExt.value = '';
   uiStore.removeInputHandler('FileInfo-rename');
 };
 
@@ -474,7 +576,6 @@ const finishRename = async () => {
 
   cancelRename();
 };
-
 
 function formatGeoLocation() {
   const info = props.fileInfo;

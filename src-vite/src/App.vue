@@ -1,6 +1,6 @@
 <template>
   <div v-if="!isReady" class="w-screen h-screen flex items-center justify-center bg-base-300">
-    <span class="loading loading-spinner loading-lg text-primary"></span>
+    <span class="loading loading-spinner loading-lg text-primary app-loading-delayed"></span>
   </div>
   <router-view v-else />
 </template>
@@ -76,3 +76,16 @@ const handleContextMenu = (e) => {
 };
 
 </script>
+
+<style scoped>
+.app-loading-delayed {
+  opacity: 0;
+  animation: appLoadingShow 0s linear 0.5s forwards;
+}
+
+@keyframes appLoadingShow {
+  to {
+    opacity: 1;
+  }
+}
+</style>

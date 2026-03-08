@@ -19,14 +19,13 @@
       :style="layoutStyle">
       <!-- image -->
       <img :src="file.thumbnail"
-        class="duration-300"
         :class="{
           'group-hover:scale-115': config.settings.grid.style === 1 || config.settings.grid.style === 2,
           'scale-115': (config.settings.grid.style === 1 || config.settings.grid.style === 2) && isSelected,
           'object-contain': config.settings.grid.style !== 2 && config.settings.grid.scaling === 0,
           'object-cover': config.settings.grid.style === 2 || config.settings.grid.scaling === 1,
           'object-fill': config.settings.grid.style !== 2 && config.settings.grid.scaling === 2,
-          'transition-all': !isTransitionDisabled,
+          'transition-all': !isTransitionDisabled && normalizedRotate === 0,
         }"
         :style="imgStyle"
         loading="lazy"
@@ -370,7 +369,6 @@ const statusBadges = computed<ThumbnailBadge[]>(() => {
       icon: IconRotate,
       style: {
         transform: `rotate(${normalizedRotate.value}deg)`,
-        transition: 'transform 0.3s ease-in-out',
       },
     });
   }

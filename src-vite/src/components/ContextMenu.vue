@@ -60,7 +60,7 @@
         <div
           v-if="activeSubmenuItem?.children?.length"
           ref="submenu"
-          class="menu fixed text-base-content/70 bg-base-200/80 backdrop-blur-md border border-base-content/30 rounded-box shadow-lg min-w-max z-[510]"
+          class="menu fixed text-base-content/70 bg-base-200/80 backdrop-blur-md border border-base-content/30 rounded-box shadow-lg min-w-max z-510"
           :style="submenuStyle"
           @mouseenter="cancelSubmenuClose"
           @mouseleave="scheduleSubmenuClose(activeSubmenuIndex)"

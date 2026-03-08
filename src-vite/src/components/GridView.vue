@@ -51,7 +51,7 @@
     <!-- Empty State / Loading -->
     <div v-else class="absolute inset-0 flex flex-col items-center justify-center">
       <div class="text-base-content/30 flex flex-col items-center">
-        <span>{{ loading ? $t('tooltip.loading') : $t('tooltip.not_found.files') }}</span>
+        <span v-if="!loading">{{ $t('tooltip.not_found.files') }}</span>
       </div>
     </div>
 

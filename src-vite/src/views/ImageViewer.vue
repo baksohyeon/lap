@@ -11,7 +11,7 @@
       ref="viewerContainer"
       :class="[
         'relative flex-1 flex justify-center items-center overflow-hidden select-none',
-        config.settings.showStatusBar ? 'pb-8' : '',
+        showEmbeddedStatusBar ? 'pb-8' : '',
       ]"
     >
       <template v-if="!isSplit && fileIndex >= 0">
@@ -194,7 +194,7 @@
     </div>
 
     <div
-      v-if="config.settings.showStatusBar"
+      v-if="showEmbeddedStatusBar"
       class="absolute bottom-0 left-0 right-0 z-30 h-8 bg-base-300/80 backdrop-blur-md"
     >
       <template v-if="!isSplit">
@@ -349,6 +349,7 @@ const activeFileInfo = computed(() => {
 const activeFileId = computed(() => {
   return isSplit.value && activePane.value === 'right' ? rightFileId.value : fileId.value;
 });
+const showEmbeddedStatusBar = computed(() => config.settings.showStatusBar && !isFullScreen.value);
 
 onMounted(async() => {
   appWindow.setFocus();

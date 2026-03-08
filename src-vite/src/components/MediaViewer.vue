@@ -185,7 +185,7 @@
     </div>
 
     <!-- Window Control Buttons (top-right) -->
-    <div v-if="showToolbar && showWindowControls && isWin" class="absolute top-0 right-0 z-[90] flex items-center" @mousedown.stop>
+    <div v-if="showToolbar && showWindowControls && isWin" class="absolute top-0 right-0 z-90 flex items-center" @mousedown.stop>
       <IconWinMinus 
         class="p-3 w-12 h-10 text-base-content/70 hover:text-base-content hover:bg-base-100 transition-colors duration-300 cursor-pointer" 
         @click.stop="minimizeWindow" 
@@ -244,12 +244,12 @@
     <div
       v-if="showStatusBadges && quickViewStatusBadges.length > 0"
       class="pointer-events-none absolute inset-x-0 top-0 z-80 h-16"
-    />
+    ></div>
     <div
       v-if="showStatusBadges && quickViewStatusBadges.length > 0"
       :class="[
         'pointer-events-none absolute left-2 z-90 flex max-w-[calc(100%-4rem)] flex-wrap gap-1',
-        mode === 2 ? 'top-12' : 'top-2',
+        config.mediaViewer.isPinned || isFullScreen ? 'top-12' : 'top-2',
       ]"
     >
       <div
@@ -587,7 +587,7 @@ const quickViewStatusBadges = computed(() => {
 });
 
 const showStatusBadges = computed(() => {
-  return props.mode === 0 || props.mode === 2;
+  return props.mode === 0 || props.mode === 1 || props.mode === 2;
 });
 let resizeObserver: ResizeObserver | null = null;
 
@@ -653,7 +653,7 @@ function handleContextMenu(e: MouseEvent) {
 }
 
 const computedToolbarClass = computed(() => {
-  const commonClasses = 'absolute z-[80] h-10 flex flex-row items-center justify-center select-none';
+  const commonClasses = 'absolute z-80 h-10 flex flex-row items-center justify-center select-none';
   
   const isPinned = props.isFullScreen ? false : (props.mode === 2 ? true : config.mediaViewer.isPinned);
 

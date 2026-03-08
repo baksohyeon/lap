@@ -180,7 +180,7 @@
                 :fileList="fileList"
                 :showFolderFiles="showFolderFiles"
                 :selectMode="selectMode"
-                :loading="isLoading"
+                :loading="isLoading || !hasLoadedInitialResult"
                 :layout-version="layoutVersion"
                 @item-clicked="handleItemClicked"
                 @item-dblclicked="handleItemDblClicked"
@@ -373,6 +373,7 @@
             @setRating="setSelectedFileRating"
             @quick-edit-tag="clickTag"
             @quick-edit-comment="openCommentEditor"
+            @navigate-folder="handleInfoNavigateFolder"
           />
         </div>
       </transition>
@@ -910,6 +911,7 @@ const timelineData = ref<any[]>([]);  // timeline markers for scrollbar
 const toolTipRef = ref<any>(null);
 const isProcessing = ref(false);  // show processing status
 const isLoading = ref(false);     // show loading status in GridView (for empty file list)
+const hasLoadedInitialResult = ref(false); // avoid showing "No files found" before first real result returns
 
 const searchBoxRef = ref<any>(null);
 
@@ -2040,6 +2042,7 @@ async function getFileList(
     // Only clear loading state if this is still the active request
     if (requestId === currentContentRequestId) {
       isLoading.value = false;
+      hasLoadedInitialResult.value = true;
     }
   }
 }
@@ -2112,6 +2115,7 @@ async function getImageSearchFileList(
     // Only clear loading state if this is still the active request
     if (requestId === currentContentRequestId) {
       isLoading.value = false;
+      hasLoadedInitialResult.value = true;
     }
   }
 }
@@ -2163,6 +2167,8 @@ async function updateContent() {
             fileList.value = folderFiles || [];
             totalFileCount.value = fileList.value.length;
             totalFileSize.value = fileList.value.reduce((total, file) => total + file.size, 0);
+            isLoading.value = false;
+            hasLoadedInitialResult.value = true;
             openImageViewer(0, false, true);
 
             // Fetch timeline data for the folder
@@ -2486,8 +2492,11 @@ async function enterPersonSearchMode(file: any) {
   getFileList({ personId: face.person_id }, requestId);
 }
 
-function enterAlbumPreviewMode(file: any) {
+function enterAlbumPreviewMode(file: any, targetFolderPath?: string) {
   if (!file.album_id) return;
+  const folderPath = targetFolderPath || getFolderPath(file.file_path);
+  if (!folderPath) return;
+  if (tempViewMode.value === 'album' && currentQueryParams.value.searchFolder === folderPath) return;
 
   // 1. Backup current state
   if (tempViewMode.value === 'none') {
@@ -2517,8 +2526,6 @@ function enterAlbumPreviewMode(file: any) {
   showQuickView.value = false;
   
   // 3. Update Title and Fetch Files
-  const folderPath = getFolderPath(file.file_path);
-
   getAlbum(file.album_id).then((album: any) => {
     if (album) {
       if(folderPath === album.path) { // current folder is root
@@ -3082,9 +3089,18 @@ const handleSelectMode = (value: any) => {
       fileList.value[i].isSelected = false;
     }
   } else {
+    if (fileList.value.length > 0) {
+      selectedItemIndex.value = 0;
+    }
     showQuickView.value = false;
     config.rightPanel.show = false;
   }
+};
+
+const handleInfoNavigateFolder = (folderPath: string) => {
+  const targetFile = fileList.value[selectedItemIndex.value];
+  if (!folderPath || !targetFile?.album_id) return;
+  enterAlbumPreviewMode(targetFile, folderPath);
 };
 
 const handleFileTypeSelect = (option: any, extendOption: any) => {
