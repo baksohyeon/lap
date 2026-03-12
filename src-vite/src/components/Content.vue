@@ -66,7 +66,7 @@
         <DropDownSelect
           :options="fileTypeOptions"
           :defaultIndex="config.search.fileType"
-          :disabled="config.main.sidebarIndex === 2 || tempViewMode !== 'none' || isIndexing || showQuickView"
+          :disabled="config.main.sidebarIndex === 2 || tempViewMode !== 'none' || showQuickView || isScanStreamingMode"
           :selected="config.search.fileType !== 0"
           @select="handleFileTypeSelect"
         />
@@ -77,7 +77,7 @@
           :defaultIndex="config.search.sortType"
           :extendOptions="sortExtendOptions"
           :defaultExtendIndex="config.search.sortOrder"
-          :disabled="config.main.sidebarIndex === 2 || tempViewMode !== 'none' || isIndexing || showQuickView"
+          :disabled="config.main.sidebarIndex === 2 || tempViewMode !== 'none' || showQuickView || isScanStreamingMode"
           @select="handleSortTypeSelect"
         />
 
@@ -98,7 +98,7 @@
           <div class="flex flex-row items-center gap-2 px-2 shrink-0 group">
             <SliderInput v-model="config.settings.grid.size" 
               :min="120" :max="360" :step="1" label="" :slider_width="80" 
-              :disabled="isIndexing || showQuickView" 
+              :disabled="showQuickView" 
             />
           </div>
 
@@ -106,7 +106,7 @@
           <TButton
             :icon="[IconCard, IconTile, IconJustified][config.settings.grid.style]"
             :tooltip="localeMsg.settings.gallery_view.style_options[config.settings.grid.style]"
-            :disabled="isIndexing || showQuickView"
+            :disabled="showQuickView"
             @click="cycleGridStyle"
           />
 
@@ -119,7 +119,7 @@
             }" 
             :tooltip="localeMsg.settings.filmstrip_view.title"
             :selected="config.settings.grid.showFilmStrip"
-            :disabled="isIndexing || showQuickView"
+            :disabled="showQuickView"
             @click="toggleFilmstripView"
           />
 
@@ -129,7 +129,7 @@
             :icon="IconCheckAll"
             :tooltip="$t('toolbar.filter.select_mode')"
             :selected="selectMode"
-            :disabled="fileList.length === 0 || showQuickView || isIndexing"
+            :disabled="fileList.length === 0 || showQuickView"
             @click="handleSelectMode(!selectMode)"
           />
 
@@ -138,7 +138,7 @@
             :icon="IconSimilar"
             :tooltip="$t('toolbar.tooltip.open_dedup')"
             :selected="isDedupPanelOpen"
-            :disabled="isIndexing || showQuickView || fileList.length === 0"
+            :disabled="showQuickView || fileList.length === 0"
             @click="toggleDedupPanel"
           />
 
@@ -147,7 +147,6 @@
             :icon="IconInformation"
             :tooltip="isInfoPanelOpen ? $t('toolbar.tooltip.hide_info') : $t('toolbar.tooltip.show_info')"
             :selected="isInfoPanelOpen"
-            :disabled="isIndexing"
             @click="toggleInfoPanel"
           />
         </div>
@@ -155,8 +154,8 @@
     </div>
 
     <!-- progress bar -->
-    <div v-if="fileList.length > 0 && showProgressBar" class="absolute top-11 left-0 right-0 z-50">
-      <ProgressBar :percent="Number(((thumbCount / fileList.length) * 100).toFixed(0))" />
+    <div v-if="showTopProgressBar" class="absolute top-11 left-0 right-0 z-50">
+      <ProgressBar :percent="topProgressPercent" />
     </div>
 
     <!-- content view -->
@@ -378,22 +377,6 @@
         </div>
       </transition>
 
-      <!-- Indexing Overlay -->
-      <div v-if="isIndexing" 
-        class="absolute inset-0 z-100 bg-base-200/80 backdrop-blur-md flex flex-col items-center justify-center gap-4 text-base-content/30"
-        :class="[ config.settings.showStatusBar ? 'mt-12 mb-8': 'mt-12 mb-1' ]"
-      >
-        <IconUpdate class="mx-1 w-8 h-8 animate-spin"/>
-        <span class="text-lg text-center">{{ libConfig.index.albumQueue[0] === libConfig.album.id
-          ? $t('search.index.indexing', { album: libConfig.index.albumName, count: libConfig.index.indexed.toLocaleString(), total: libConfig.index.total.toLocaleString() }) 
-          : $t('search.index.wait_index') 
-        }}</span>
-        <span class="text-sm text-center">{{ $t('search.index.description') }}</span>
-        <button class="btn btn-primary" @click="cancelIndexing">
-          <IconClose class="w-5 h-5" />
-          {{ $t('search.index.cancel') }}
-        </button>
-      </div>
     </div>
 
     <StatusBar
@@ -408,6 +391,10 @@
       :show-film-strip="config.settings.grid.showFilmStrip"
       :show-quick-view="showQuickView"
       :image-scale="imageScale"
+      :scan-text="statusBarScanText"
+      :show-update-icon="statusBarShowUpdateIcon"
+      :is-update-animating="statusBarIsUpdateAnimating"
+      :update-icon="statusBarUpdateIcon"
     />
   </div>
 
@@ -534,6 +521,7 @@ import { getAlbum, getQueryCountAndSum, getQueryTimeLine, getQueryFiles, getFold
          dedupGetGroup, dedupDeleteSelected, getQueryFilePosition } from '@/common/api';  
 import { config, libConfig } from '@/common/config';
 import { getSmartTagById, SMART_TAG_SEARCH_THRESHOLD } from '@/common/smartTags';
+import { getAlbumScanState, getAlbumScanIcon, shouldAnimateAlbumScanIcon } from '@/common/scanStatus';
 import { isWin, isMac, setTheme, separator,
          formatFileSize, formatDate, getCalendarDateRange, formatFolderBreadcrumb, getThumbnailDataUrl,
          extractFileName, combineFileName, getFolderPath, getSelectOptions, 
@@ -868,6 +856,17 @@ const containerHeight = ref(0);   // container height
 const containerWidth = ref(0);    // container width
 const layoutContentHeight = ref(0); // reported content height from GridView
 const layoutVersion = ref(0);     // version to force layout update
+let layoutRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleLayoutRefresh() {
+  // Only justified layout depends heavily on per-item geometry changes.
+  if (config.settings.grid.style !== 2) return;
+  if (layoutRefreshTimer) return;
+  layoutRefreshTimer = setTimeout(() => {
+    layoutVersion.value++;
+    layoutRefreshTimer = null;
+  }, 120);
+}
 const gap = 8;                    // Gap between items (must match GridView)
 
 const itemWidth = computed(() => {
@@ -935,6 +934,17 @@ const currentQueryParams = ref({
   tagId: 0,
   personId: 0,
 });
+
+const scanStreamRequestInFlight = ref(false);
+const scanStreamPullPending = ref(false);
+const scanStreamAlbumId = ref<number | null>(null);
+let scanStreamFlushTimer: ReturnType<typeof setTimeout> | null = null;
+const scanStreamQueuedAlbumId = ref<number | null>(null);
+const scanStreamQueuedIndexed = ref(0);
+let scanVisiblePrefetchTimer: ReturnType<typeof setTimeout> | null = null;
+const scanVisiblePrefetchStart = ref(0);
+const scanVisiblePrefetchEnd = ref(0);
+const pendingRestoreScrollTop = ref<number | null>(null);
 
 // ai image search params
 const currentImageSearchParams = ref({
@@ -1372,10 +1382,6 @@ function handleLocalKeyDown(event: KeyboardEvent) {
     return;
   }
 
-  if (isIndexing.value) {
-    return;
-  }
-
   // Disable keyboard events during slideshow (except Escape)
   if (isSlideShow.value && event.key !== 'Escape') {
     return;
@@ -1466,6 +1472,10 @@ async function processNextAlbum() {
     const albumId = libConfig.index.albumQueue[0];
     const album = await getAlbum(albumId);
     if (album) {
+      libConfig.index.status = 1;
+      libConfig.index.pausedAlbumIds = (libConfig.index.pausedAlbumIds as any[]).filter(
+        id => Number(id) !== Number(albumId)
+      );
       libConfig.index.albumName = album.name;
       libConfig.index.indexed = 0;
       libConfig.index.total = 0;
@@ -1476,7 +1486,9 @@ async function processNextAlbum() {
       processNextAlbum();
     }
   } else {
-    libConfig.index.status = 0;
+    if (libConfig.index.status !== 2) {
+      libConfig.index.status = 0;
+    }
   }
 }
 
@@ -1487,46 +1499,330 @@ const isIndexing = computed(() => {
          libConfig.index.albumQueue.includes(libConfig.album.id);
 });
 
-watch(isIndexing, (val) => {
-  // Always remove first to clear any stale entries
-  uiStore.removeInputHandler('indexing');
-  
-  if (val) {
-    showQuickView.value = false;
-    // Push fresh handler when indexing starts
-    uiStore.pushInputHandler('indexing');
+const isAnyIndexing = computed(() =>
+  libConfig.index.albumQueue.length > 0
+);
+
+const isScanStreamingMode = computed(() =>
+  isIndexing.value &&
+  config.main.sidebarIndex === 0 &&
+  Boolean(libConfig.album.selected)
+);
+
+const thumbProgressPercent = computed(() => {
+  if (fileList.value.length <= 0) return 0;
+  return Number(((thumbCount.value / fileList.value.length) * 100).toFixed(0));
+});
+
+const isAlbumPaused = (albumId: number | null | undefined) =>
+  (libConfig.index.pausedAlbumIds as any[]).some(id => Number(id) === Number(albumId || 0));
+const syncIndexStatus = () => {
+  if ((libConfig.index.albumQueue as any[]).length > 0) {
+    libConfig.index.status = 1;
+  } else if ((libConfig.index.pausedAlbumIds as any[]).length > 0) {
+    libConfig.index.status = 2;
   } else {
+    libConfig.index.status = 0;
+  }
+};
+const activeScanningAlbumId = computed(() => Number(libConfig.index.albumQueue[0] || 0));
+const suppressNextIndexingIdleRefresh = ref(false);
+const selectedAlbumIdForStatusBar = computed(() => Number(libConfig.album.id || 0));
+const selectedAlbumScanState = computed(() => getAlbumScanState({
+  albumId: selectedAlbumIdForStatusBar.value,
+  albumQueue: libConfig.index.albumQueue as any[],
+  pausedAlbumIds: libConfig.index.pausedAlbumIds as any[],
+}));
+const selectedAlbumScanIcon = computed(() => getAlbumScanIcon(selectedAlbumScanState.value));
+const selectedAlbumScanAnimating = computed(() => shouldAnimateAlbumScanIcon(selectedAlbumScanState.value));
+const isOtherTabScanning = computed(() =>
+  config.main.sidebarIndex !== 0 &&
+  (libConfig.index.albumQueue as any[]).length > 0 &&
+  Number(libConfig.index.status || 0) !== 2
+);
+const showBackgroundScanningIcon = computed(() =>
+  selectedAlbumScanState.value === 'complete' &&
+  (libConfig.index.albumQueue as any[]).length > 0 &&
+  Number(libConfig.index.status || 0) !== 2
+);
+
+const statusBarScanMode = computed<'none' | 'current' | 'waiting' | 'background' | 'paused'>(() => {
+  if (config.main.sidebarIndex === 0) {
+    if (selectedAlbumScanState.value === 'scanning') return 'current';
+    if (selectedAlbumScanState.value === 'queued') return 'waiting';
+    if (selectedAlbumScanState.value === 'paused') return 'paused';
+    if (showBackgroundScanningIcon.value) return 'background';
+    return 'none';
+  }
+  if (isOtherTabScanning.value) return 'background';
+  return 'none';
+});
+
+const statusBarShowUpdateIcon = computed(() =>
+  selectedAlbumScanIcon.value !== 'none' || statusBarScanMode.value === 'background'
+);
+const statusBarUpdateIcon = computed<'update' | 'dot'>(() =>
+  statusBarScanMode.value === 'background' ? 'update' : selectedAlbumScanIcon.value === 'dot' ? 'dot' : 'update'
+);
+const statusBarIsUpdateAnimating = computed(() =>
+  statusBarScanMode.value === 'background' || selectedAlbumScanAnimating.value
+);
+
+const statusBarScanText = computed(() => {
+  if (statusBarScanMode.value === 'waiting') {
+    return localeMsg.value.search.index.wait_index || 'Wait for scan...';
+  }
+  if (statusBarScanMode.value === 'paused') {
+    return localeMsg.value.search.index.paused || '扫描已暂停';
+  }
+  if (statusBarScanMode.value !== 'current') return '';
+  const album = libConfig.index.albumName || '';
+  const count = Number(libConfig.index.indexed || 0).toLocaleString();
+  const total = Number(libConfig.index.total || 0).toLocaleString();
+  return localeMsg.value.search.index.indexing
+    .replace('{album}', album)
+    .replace('{count}', count)
+    .replace('{total}', total);
+});
+
+const showTopProgressBar = computed(() =>
+  fileList.value.length > 0 && showProgressBar.value
+);
+
+const topProgressPercent = computed(() => thumbProgressPercent.value);
+
+function buildScanStreamQueryParams() {
+  return {
+    searchFileType: 0,
+    sortType: 5, // internal sort: by id asc (insert/scan order)
+    sortOrder: 0,
+    searchFileName: "",
+    searchAllSubfolders: libConfig.album.folderPath || "",
+    searchFolder: "",
+    startDate: 0,
+    endDate: 0,
+    make: "",
+    model: "",
+    locationAdmin1: "",
+    locationName: "",
+    isFavorite: false,
+    rating: 0,
+    tagId: 0,
+    personId: 0,
+  };
+}
+
+function enterScanStreamingMode(albumId: number) {
+  scanStreamAlbumId.value = albumId;
+  fileList.value = [];
+  totalFileCount.value = 0;
+  totalFileSize.value = 0;
+  selectedItemIndex.value = -1;
+  thumbCount.value = 0;
+  showProgressBar.value = false;
+  isLoading.value = false;
+  hasLoadedInitialResult.value = true;
+  currentQueryParams.value = buildScanStreamQueryParams();
+  timelineData.value = [];
+  lastVisibleRange = { start: -1, end: -1 };
+  markDedupSourceUpdated();
+}
+
+async function pullScanStreamingDelta(albumId: number, current: number) {
+  if (!isScanStreamingMode.value || Number(libConfig.album.id) !== Number(albumId)) {
+    return;
+  }
+
+  if (scanStreamAlbumId.value !== albumId) {
+    enterScanStreamingMode(albumId);
+  }
+
+  const targetCount = Math.max(0, Number(current || 0));
+  const offset = fileList.value.length;
+  const gap = targetCount - offset;
+  if (gap <= 0) return;
+
+  for (let i = 0; i < gap; i++) {
+    const idx = offset + i;
+    fileList.value.push({
+      id: `scan-ph-${albumId}-${idx}`,
+      isPlaceholder: true,
+      name: '',
+      size: 0,
+      isSelected: false,
+      rotate: 0,
+    });
+  }
+
+  totalFileCount.value = fileList.value.length;
+  const startIndex = lastVisibleRange.start >= 0 ? lastVisibleRange.start : 0;
+  const endIndex =
+    lastVisibleRange.end > startIndex
+      ? lastVisibleRange.end
+      : Math.min(fileList.value.length, selectionChunkSize.value);
+  queueScanVisiblePrefetch(startIndex, endIndex);
+  markDedupSourceUpdated();
+}
+
+function queueScanVisiblePrefetch(startIndex: number, endIndex: number) {
+  const buffer = 200;
+  scanVisiblePrefetchStart.value = startIndex - buffer;
+  scanVisiblePrefetchEnd.value = endIndex + buffer;
+
+  if (scanVisiblePrefetchTimer) return;
+  scanVisiblePrefetchTimer = setTimeout(() => {
+    scanVisiblePrefetchTimer = null;
+    fetchDataRange(scanVisiblePrefetchStart.value, scanVisiblePrefetchEnd.value);
+  }, 80);
+}
+
+async function scheduleScanStreamingPull(albumId: number, current: number) {
+  if (scanStreamRequestInFlight.value) {
+    scanStreamPullPending.value = true;
+    return;
+  }
+
+  scanStreamRequestInFlight.value = true;
+  try {
+    await pullScanStreamingDelta(albumId, current);
+  } finally {
+    scanStreamRequestInFlight.value = false;
+    if (scanStreamPullPending.value) {
+      scanStreamPullPending.value = false;
+      await scheduleScanStreamingPull(albumId, libConfig.index.indexed);
+    }
+  }
+}
+
+function queueScanStreamingPull(albumId: number, current: number) {
+  scanStreamQueuedAlbumId.value = albumId;
+  scanStreamQueuedIndexed.value = Math.max(scanStreamQueuedIndexed.value, Number(current || 0));
+
+  if (scanStreamFlushTimer) return;
+  scanStreamFlushTimer = setTimeout(async () => {
+    scanStreamFlushTimer = null;
+    const queuedAlbumId = scanStreamQueuedAlbumId.value;
+    const queuedIndexed = scanStreamQueuedIndexed.value;
+    scanStreamQueuedAlbumId.value = null;
+    scanStreamQueuedIndexed.value = 0;
+
+    if (!queuedAlbumId || queuedIndexed < 0) return;
+    await scheduleScanStreamingPull(queuedAlbumId, queuedIndexed);
+
+    const currentAlbumId = Number(libConfig.album.id || 0);
+    if (
+      isScanStreamingMode.value &&
+      currentAlbumId > 0 &&
+      libConfig.index.albumQueue.includes(currentAlbumId) &&
+      Number(libConfig.index.indexed || 0) > fileList.value.length
+    ) {
+      queueScanStreamingPull(currentAlbumId, Number(libConfig.index.indexed || 0));
+    }
+  }, 300);
+}
+
+function restoreScrollAfterRefresh() {
+  const scrollTop = pendingRestoreScrollTop.value;
+  if (scrollTop === null) return;
+  nextTick(() => {
+    if (gridViewRef.value) {
+      gridViewRef.value.scrollToPosition(scrollTop);
+    }
+    pendingRestoreScrollTop.value = null;
+  });
+}
+
+watch(isIndexing, (val) => {
+  if (!val) {
+    if (suppressNextIndexingIdleRefresh.value) {
+      suppressNextIndexingIdleRefresh.value = false;
+      return;
+    }
     updateContent();
   }
 });
 
+watch(
+  () => [config.main.sidebarIndex, libConfig.album.id, isAnyIndexing.value],
+  () => {
+    if (!isScanStreamingMode.value) {
+      scanStreamAlbumId.value = null;
+      scanStreamPullPending.value = false;
+      scanStreamQueuedAlbumId.value = null;
+      scanStreamQueuedIndexed.value = 0;
+      if (scanStreamFlushTimer) {
+        clearTimeout(scanStreamFlushTimer);
+        scanStreamFlushTimer = null;
+      }
+      if (scanVisiblePrefetchTimer) {
+        clearTimeout(scanVisiblePrefetchTimer);
+        scanVisiblePrefetchTimer = null;
+      }
+    }
+  }
+);
+
+watch(
+  () => [config.main.sidebarIndex, libConfig.album.id, activeScanningAlbumId.value],
+  ([sidebarIndex, albumId, activeId]) => {
+    const targetAlbumId = Number(activeId || 0);
+    if (
+      sidebarIndex === 0 &&
+      Number(albumId || 0) > 0 &&
+      Number(albumId || 0) === targetAlbumId &&
+      targetAlbumId > 0
+    ) {
+      // Re-entering album tab should immediately sync placeholder length
+      // to current indexed count, instead of waiting for next progress tick.
+      if (scanStreamAlbumId.value !== targetAlbumId) {
+        enterScanStreamingMode(targetAlbumId);
+      }
+      queueScanStreamingPull(targetAlbumId, Number(libConfig.index.indexed || 0));
+    }
+  }
+);
+
+watch(
+  () => [libConfig.index.indexed, libConfig.album.id, config.main.sidebarIndex, libConfig.album.selected],
+  ([indexed, albumId, sidebarIndex, selected]) => {
+    if (
+      sidebarIndex === 0 &&
+      Number(albumId) > 0 &&
+      libConfig.index.albumQueue.includes(Number(albumId)) &&
+      Number(indexed || 0) >= 0
+    ) {
+      queueScanStreamingPull(Number(albumId), Number(indexed || 0));
+    }
+  },
+  { immediate: true }
+);
+
 // Cancel indexing for current album
 async function cancelIndexing() {
   const albumId = libConfig.album.id;
-  const index = libConfig.index.albumQueue.indexOf(albumId);
+  const index = normalizedAlbumQueue.value.findIndex(id => id === Number(albumId || 0));
   if (index === -1) return;
 
   if (index === 0) {
-    // Active one: remove and restart processing for next
-    libConfig.index.albumQueue.shift();
-    libConfig.index.indexed = 0;
-    libConfig.index.total = 0;
-    
-    // reset status
-    libConfig.index.status = 0;
-
-    // Call backend to cancel
-    cancelIndexingApi(albumId);
-    
-    // trigger processing next
-    // Do not call immediately to avoid parallel indexing
-    setTimeout(() => {
-      processNextAlbum();
-    }, 1000);
-
+      libConfig.index.albumQueue.shift();
+      await cancelIndexingApi(albumId);
+      if (!isAlbumPaused(albumId)) {
+        (libConfig.index.pausedAlbumIds as any[]).push(Number(albumId || 0));
+      }
+      if (libConfig.index.albumQueue.length > 0) {
+        syncIndexStatus();
+        setTimeout(() => {
+          processNextAlbum();
+        }, 1000);
+      } else {
+        syncIndexStatus();
+      }
   } else {
-    // Pending one: just remove
     libConfig.index.albumQueue.splice(index, 1);
+    if (!isAlbumPaused(albumId)) {
+      (libConfig.index.pausedAlbumIds as any[]).push(Number(albumId || 0));
+    }
+    syncIndexStatus();
   }
 }
 
@@ -1582,13 +1878,42 @@ onMounted( async() => {
     const { album_id } = event.payload;
     // notify album list to update cover
     await tauriEmit('album-cover-changed', { albumId: album_id, fileId: null });
+    const shouldRefreshCurrentView =
+      config.main.sidebarIndex === 0 &&
+      Number(libConfig.album.id) > 0 &&
+      Number(libConfig.album.id) === Number(album_id);
+
     if (libConfig.index.albumQueue.length > 0 && libConfig.index.albumQueue[0] === album_id) {
       libConfig.index.albumQueue.shift();
       if (libConfig.index.albumQueue.length > 0) {
         processNextAlbum();
       } else {
-        libConfig.index.status = 0;
+        syncIndexStatus();
       }
+    }
+
+    if (shouldRefreshCurrentView) {
+      scanStreamAlbumId.value = null;
+      scanStreamPullPending.value = false;
+      scanStreamQueuedAlbumId.value = null;
+      scanStreamQueuedIndexed.value = 0;
+      if (scanStreamFlushTimer) {
+        clearTimeout(scanStreamFlushTimer);
+        scanStreamFlushTimer = null;
+      }
+      if (scanVisiblePrefetchTimer) {
+        clearTimeout(scanVisiblePrefetchTimer);
+        scanVisiblePrefetchTimer = null;
+      }
+      if (gridViewRef.value) {
+        pendingRestoreScrollTop.value = gridViewRef.value.getScrollTop();
+      }
+      // Avoid duplicated refresh: this explicit refresh replaces the
+      // watch(isIndexing) idle refresh for this finish cycle.
+      suppressNextIndexingIdleRefresh.value = true;
+      setTimeout(() => {
+        updateContent(true);
+      }, 200);
     }
   });
 
@@ -1637,7 +1962,7 @@ onMounted( async() => {
   if (libConfig.index.albumQueue.length > 0) {
      if (libConfig.index.status === 1) {
         processNextAlbum();
-     } else {
+     } else if (libConfig.index.status === 0) {
         libConfig.index.status = 1;
      }
   }
@@ -1656,6 +1981,18 @@ onMounted( async() => {
 });
 
 onBeforeUnmount(() => {
+  if (scanStreamFlushTimer) {
+    clearTimeout(scanStreamFlushTimer);
+    scanStreamFlushTimer = null;
+  }
+  if (scanVisiblePrefetchTimer) {
+    clearTimeout(scanVisiblePrefetchTimer);
+    scanVisiblePrefetchTimer = null;
+  }
+  if (layoutRefreshTimer) {
+    clearTimeout(layoutRefreshTimer);
+    layoutRefreshTimer = null;
+  }
   window.removeEventListener('keydown', handleLocalKeyDown);
   // unlisten
   unlistenImageViewer();
@@ -1844,13 +2181,20 @@ async function fetchDataRange(start: number, end: number) {
 
   for (let i = startChunk; i <= endChunk; i++) {
     const chunkStart = i * chunkSize;
+    const chunkEnd = Math.min(totalFileCount.value, chunkStart + chunkSize);
     
-    // Check if we need to load this chunk
-    // Optimization: Check the first item of the chunk.
-    if (fileList.value[chunkStart] && fileList.value[chunkStart].isPlaceholder) {
+    // Check if this chunk still contains any placeholders.
+    let chunkNeedsLoad = false;
+    for (let idx = chunkStart; idx < chunkEnd; idx++) {
+      if (fileList.value[idx]?.isPlaceholder) {
+        chunkNeedsLoad = true;
+        break;
+      }
+    }
+
+    if (chunkNeedsLoad) {
       const key = `${chunkStart}-${chunkSize}`;
       if (pendingRequests.has(key)) {
-        console.log(`Skipping pending chunk: ${key}`);
         continue;
       }
       
@@ -1864,36 +2208,49 @@ async function fetchDataRange(start: number, end: number) {
             // Update fileList and collect reactive references
             const filesToFetch = [];
             for (let j = 0; j < newFiles.length; j++) {
-              if (chunkStart + j < fileList.value.length) {
-                const existingItem = fileList.value[chunkStart + j];
-                // Preserve client-side state
-                const isSelected = existingItem ? existingItem.isSelected : false;
-                const rotate = existingItem ? (existingItem.rotate || 0) : 0;
+              if (chunkStart + j >= fileList.value.length) continue;
 
-                fileList.value[chunkStart + j] = { 
-                  ...newFiles[j], 
-                  isSelected,
-                  rotate: rotate || newFiles[j].rotate || 0
-                };
-                filesToFetch.push(fileList.value[chunkStart + j]);
+              const existingItem = fileList.value[chunkStart + j];
+              // Avoid replacing already-loaded items; this prevents thumbnail flicker.
+              if (existingItem && !existingItem.isPlaceholder) {
+                continue;
+              }
 
-                // Update ImageViewer if the selected file is loaded
-                if (chunkStart + j === selectedItemIndex.value) {
-                  if (selectedItemIndex.value === 0) {
-                    openImageViewer(selectedItemIndex.value, false, true);
-                  } else {
-                    openImageViewer(selectedItemIndex.value, false);
-                  }
-                  updateSelectedImage(selectedItemIndex.value);
+              // Preserve client-side state when upgrading placeholder -> real item.
+              const isSelected = existingItem ? existingItem.isSelected : false;
+              const rotate = existingItem ? (existingItem.rotate || 0) : 0;
+              const thumbnail = existingItem?.thumbnail;
+
+              fileList.value[chunkStart + j] = {
+                ...newFiles[j],
+                isSelected,
+                rotate: rotate || newFiles[j].rotate || 0,
+                thumbnail,
+              };
+
+              // In scan streaming mode, total size starts at 0 and should grow
+              // as placeholders are upgraded to real files.
+              if (isScanStreamingMode.value) {
+                totalFileSize.value += Number(newFiles[j]?.size || 0);
+              }
+              filesToFetch.push(fileList.value[chunkStart + j]);
+
+              // Update ImageViewer if the selected file is loaded
+              if (chunkStart + j === selectedItemIndex.value) {
+                if (selectedItemIndex.value === 0) {
+                  openImageViewer(selectedItemIndex.value, false, true);
+                } else {
+                  openImageViewer(selectedItemIndex.value, false);
                 }
+                updateSelectedImage(selectedItemIndex.value);
               }
             }
             // Fetch thumbnails for these files
             if (filesToFetch.length > 0) {
               getFileListThumb(filesToFetch);
             }
-            // Trigger layout update since file dimensions might have changed
-            layoutVersion.value++;
+            // Trigger layout update in throttled mode to avoid visible flicker.
+            scheduleLayoutRefresh();
           }
         })
         .catch(err => {
@@ -1938,7 +2295,7 @@ async function hydrateRangeForSelection(targetCount: number) {
     console.error('hydrateRangeForSelection error:', err);
   } finally {
     isProcessing.value = false;
-    layoutVersion.value++;
+    scheduleLayoutRefresh();
   }
 }
 
@@ -2031,6 +2388,7 @@ async function getFileList(
         size: 0,
       }));
       markDedupSourceUpdated(requestId);
+      restoreScrollAfterRefresh();
       if (totalFileCount.value === 0) {
         openImageViewer(0, false, true);
       }
@@ -2142,7 +2500,26 @@ async function getImageSearchFileList(
   }
 }
 
-async function updateContent() {
+async function updateContent(force = false) {
+  const newIndex = config.main.sidebarIndex;
+  const nextAlbumId = newIndex === 0 ? Number(libConfig.album.id || 0) : 0;
+  const isCurrentAlbumIndexing =
+    newIndex === 0 &&
+    !!libConfig.album.id &&
+    libConfig.album.id > 0 &&
+    libConfig.index.albumQueue.includes(libConfig.album.id);
+
+  if (
+    !force &&
+    isScanStreamingMode.value &&
+    isCurrentAlbumIndexing &&
+    nextAlbumId > 0
+  ) {
+    enterScanStreamingMode(nextAlbumId);
+    queueScanStreamingPull(nextAlbumId, Number(libConfig.index.indexed || 0));
+    return;
+  }
+
   // Reset temp view mode on any content update
   tempViewMode.value = 'none';
   showQuickView.value = false;
@@ -2156,7 +2533,6 @@ async function updateContent() {
   thumbCount.value = 0;
 
   const requestId = ++currentContentRequestId;
-  const newIndex = config.main.sidebarIndex;
 
   // Reset file list immediately to reflect UI change
   fileList.value = [];
@@ -2190,6 +2566,7 @@ async function updateContent() {
             totalFileCount.value = fileList.value.length;
             totalFileSize.value = fileList.value.reduce((total, file) => total + file.size, 0);
             markDedupSourceUpdated(requestId);
+            restoreScrollAfterRefresh();
             isLoading.value = false;
             hasLoadedInitialResult.value = true;
             openImageViewer(0, false, true);
@@ -3159,7 +3536,7 @@ const invertSelectionInCurrentList = async () => {
 };
 
 const handleSelectMode = (value: any) => {
-  if (value && (fileList.value.length === 0 || showQuickView.value || isIndexing.value)) return;
+  if (value && (fileList.value.length === 0 || showQuickView.value)) return;
 
   selectMode.value = value;
   if(!selectMode.value) {
@@ -3183,11 +3560,13 @@ const handleInfoNavigateFolder = (folderPath: string) => {
 };
 
 const handleFileTypeSelect = (option: any, extendOption: any) => {
+  if (isScanStreamingMode.value) return;
   selectMode.value = false;   // exit multi-select mode
   config.search.fileType = option;
 };
 
 const handleSortTypeSelect = (option: any, extendOption: any) => {
+  if (isScanStreamingMode.value) return;
   selectMode.value = false;   // exit multi-select mode
   config.search.sortType = option;
   config.search.sortOrder = extendOption;

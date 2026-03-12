@@ -131,6 +131,8 @@ pub struct IndexState {
     pub status: i32,
     #[serde(alias = "album_queue")]
     pub album_queue: Vec<i64>,
+    #[serde(alias = "paused_album_ids", default)]
+    pub paused_album_ids: Vec<i64>,
     #[serde(alias = "album_name")]
     pub album_name: String,
     pub indexed: i64,
@@ -181,6 +183,8 @@ pub struct Library {
 /// App configuration stored in app-config.json
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
+    #[serde(default)]
+    pub debug: bool,
     pub current_library_id: String,
     pub libraries: Vec<Library>,
 }
@@ -189,6 +193,7 @@ impl Default for AppConfig {
     fn default() -> Self {
         let now = chrono::Utc::now().timestamp();
         Self {
+            debug: false,
             current_library_id: "default".to_string(),
             libraries: vec![Library {
                 id: "default".to_string(),
@@ -463,6 +468,7 @@ fn recover_app_config_from_library_dbs() -> Result<AppConfig, String> {
     };
 
     Ok(AppConfig {
+        debug: false,
         current_library_id,
         libraries,
     })

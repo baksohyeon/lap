@@ -8,7 +8,7 @@
     <div :style="wrapperStyle">
       <div 
         v-for="poolItem in visibleItems" 
-        :key="poolItem.item[keyField]"
+        :key="poolItem.index"
         class="absolute"
         :class="{ 'transition-all duration-500 ease-in-out': transition }"
         :style="getItemStyle(poolItem)"

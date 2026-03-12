@@ -47,6 +47,7 @@
     "index": {
       "wait_index": "スキャンを待機中...",
       "indexing": "'{album}' をスキャン中... {count} / {total}",
+      "paused": "スキャンを一時停止中",
       "description": "検索とプレビューのためにサムネイルを生成しています。大きなアルバムの場合は数分かかることがあります。",
       "cancel": "スキャンをキャンセル"
     }
@@ -302,6 +303,7 @@
       "add": "アルバムを追加...",
       "edit": "アルバムを編集...",
       "index": "アルバムをスキャン",
+      "pause_scan": "スキャンを一時停止",
       "include_in_search": "検索に含める",
       "exclude_from_search": "検索から除外",
       "remove": "アルバムを削除",

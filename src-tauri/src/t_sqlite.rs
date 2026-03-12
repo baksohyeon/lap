@@ -18,6 +18,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::io::{BufReader, Cursor};
+use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -1599,6 +1600,7 @@ impl AFile {
             2 => format!("a.size {}, a.id {}", dir, dir),
             3 => format!("a.width {}, a.height {}, a.id {}", dir, dir, dir),
             4 => "RANDOM()".to_string(),
+            5 => "a.id ASC".to_string(), // internal: stable append order during scanning
             _ => format!("a.taken_date {}, a.id {}", dir, dir),
         }
     }
@@ -1788,12 +1790,40 @@ impl AFile {
         let embedding = match AThumb::fetch(file_id) {
             Ok(Some(thumb)) if thumb.thumb_data.is_some() => {
                 let thumb_bytes = thumb.thumb_data.as_ref().unwrap();
-                engine.encode_image_from_bytes(thumb_bytes).or_else(|_| {
-                    // If thumbnail processing fails (e.g. corrupted), try original
-                    engine.encode_image(&file_path)
-                })
+                match panic::catch_unwind(AssertUnwindSafe(|| {
+                    engine.encode_image_from_bytes(thumb_bytes)
+                })) {
+                    Ok(res) => res.or_else(|_| {
+                        // If thumbnail processing fails (e.g. corrupted), try original
+                        match panic::catch_unwind(AssertUnwindSafe(|| {
+                            engine.encode_image(&file_path)
+                        })) {
+                            Ok(res2) => res2,
+                            Err(_) => Err(format!(
+                                "Embedding panic while encoding original image: {}",
+                                file_path
+                            )),
+                        }
+                    }),
+                    // If thumbnail path panics, still try original once.
+                    Err(_) => match panic::catch_unwind(AssertUnwindSafe(|| {
+                        engine.encode_image(&file_path)
+                    })) {
+                        Ok(res2) => res2,
+                        Err(_) => Err(format!(
+                            "Embedding panic while encoding original image: {}",
+                            file_path
+                        )),
+                    },
+                }
             }
-            _ => engine.encode_image(&file_path),
+            _ => match panic::catch_unwind(AssertUnwindSafe(|| engine.encode_image(&file_path))) {
+                Ok(res) => res,
+                Err(_) => Err(format!(
+                    "Embedding panic while encoding original image: {}",
+                    file_path
+                )),
+            },
         }?;
 
         // 5. Save to DB

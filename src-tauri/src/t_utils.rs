@@ -759,12 +759,29 @@ struct FinishedPayload {
     album_id: i64,
 }
 
+fn write_index_trace(enabled: bool, album_id: i64, file_path: &str) {
+    if !enabled {
+        return;
+    }
+    let file_name = get_file_name(file_path);
+    let now = Local::now().format("%Y-%m-%d %H:%M:%S%.3f");
+    let content = format!(
+        "time: {}\nalbum_id: {}\nfile_name: {}\nfile_path: {}\n",
+        now, album_id, file_name, file_path
+    );
+    let _ = fs::write("/tmp/lap-index-current.log", content);
+}
+
 pub async fn index_album_worker(
     app_handle: &tauri::AppHandle,
     cancellation_token: Arc<Mutex<HashMap<i64, bool>>>,
     album_id: i64,
     thumbnail_size: u32,
 ) -> Result<(), String> {
+    let index_trace_enabled = crate::t_config::load_app_config()
+        .map(|c| c.debug)
+        .unwrap_or(false);
+
     // 1. Get album info
     let album = Album::get_album_by_id(album_id).map_err(|e| e.to_string())?;
 
@@ -805,6 +822,9 @@ pub async fn index_album_worker(
         if entry.file_type().is_file() {
             let path_str = entry.path().to_string_lossy().to_string();
             if let Some(ftype) = get_file_type(&path_str) {
+                // Persist current file pointer for post-crash diagnosis.
+                write_index_trace(index_trace_enabled, album_id, &path_str);
+
                 let parent_path = entry
                     .path()
                     .parent()

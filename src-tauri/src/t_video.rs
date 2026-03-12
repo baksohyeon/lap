@@ -49,6 +49,14 @@ pub fn get_video_thumbnail(
     file_path: &str,
     thumbnail_size: u32,
 ) -> Result<Option<Vec<u8>>, String> {
+    get_video_thumbnail_internal(file_path, thumbnail_size, true)
+}
+
+fn get_video_thumbnail_internal(
+    file_path: &str,
+    thumbnail_size: u32,
+    seek_to_ten_percent: bool,
+) -> Result<Option<Vec<u8>>, String> {
     ffmpeg::init().map_err(|e| format!("ffmpeg init error: {e}"))?;
 
     let mut ictx =
@@ -73,11 +81,16 @@ pub fn get_video_thumbnail(
         .video()
         .map_err(|e| format!("Decoder error: {e}"))?;
 
-    // For video files, seek to 10% of the duration
-    // For HEIC files, we may not have a duration, so we skip seeking
-    if ictx.duration() > 0 {
-        ictx.seek(ictx.duration() / 10, ..)
-            .map_err(|e| format!("Seek error: {e}"))?;
+    // For video files, seek to 10% of the duration.
+    // If seek fails on malformed containers, fallback to decoding from start.
+    if seek_to_ten_percent && ictx.duration() > 0 {
+        if let Err(e) = ictx.seek(ictx.duration() / 10, ..) {
+            eprintln!(
+                "Seek failed for '{}': {}. Falling back to decode from start.",
+                file_path, e
+            );
+            return get_video_thumbnail_internal(file_path, thumbnail_size, false);
+        }
     }
 
     for (stream, packet) in ictx.packets() {
@@ -113,11 +126,32 @@ pub fn get_video_thumbnail(
 
             // avoid stride error
             let stride = rgb_frame.stride(0);
+            let row_bytes = width as usize * 3;
+            if stride < row_bytes {
+                eprintln!(
+                    "Invalid video frame stride for '{}': stride={} < row_bytes={}",
+                    file_path, stride, row_bytes
+                );
+                return Ok(None);
+            }
+
+            let frame_data = rgb_frame.data(0);
             let mut buf = Vec::with_capacity((width * height * 3) as usize);
             for y in 0..height as usize {
-                let start = y * stride;
-                let end = start + (width as usize * 3);
-                buf.extend_from_slice(&rgb_frame.data(0)[start..end]);
+                let start = y.saturating_mul(stride);
+                let end = start.saturating_add(row_bytes);
+                if end > frame_data.len() {
+                    eprintln!(
+                        "Video frame buffer out-of-range for '{}': y={}, start={}, end={}, len={}",
+                        file_path,
+                        y,
+                        start,
+                        end,
+                        frame_data.len()
+                    );
+                    return Ok(None);
+                }
+                buf.extend_from_slice(&frame_data[start..end]);
             }
 
             // Create DynamicImage

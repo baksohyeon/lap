@@ -47,6 +47,7 @@
     "index": {
       "wait_index": "Esperando escaneo...",
       "indexing": "Escaneando '{album}'... {count} / {total}",
+      "paused": "Escaneo en pausa",
       "description": "Generando miniaturas para búsqueda y vista previa. Puede tardar unos minutos.",
       "cancel": "Cancelar escaneo"
     }
@@ -302,6 +303,7 @@
       "add": "Añadir álbum...",
       "edit": "Editar álbum...",
       "index": "Escanear álbum",
+      "pause_scan": "Pausar escaneo",
       "include_in_search": "Incluir en búsqueda",
       "exclude_from_search": "Excluir de búsqueda",
       "remove": "Eliminar álbum",

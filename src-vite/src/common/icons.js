@@ -99,6 +99,8 @@ export { default as IconEdit } from '@/assets/icons/edit.svg';
 export { default as IconPrint } from '@/assets/icons/print.svg';
 export { default as IconRefresh } from '@/assets/icons/refresh.svg';
 export { default as IconUpdate } from '@/assets/icons/update.svg';
+export { default as IconUpdateOff } from '@/assets/icons/update-off.svg';
+export { default as IconUpdateDot } from '@/assets/icons/update-dot.svg';
 export { default as IconUpdateAlert } from '@/assets/icons/update-alert.svg';
 export { default as IconRotate } from '@/assets/icons/rotate-right.svg';
 export { default as IconComment } from '@/assets/icons/comment.svg';

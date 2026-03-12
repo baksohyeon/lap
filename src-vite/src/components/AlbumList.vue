@@ -72,11 +72,11 @@
                 :buttonSize="'small'"
                 @click="clickIndexAlbum(album.id)"
               /> -->
-              <div v-if="(album.indexed !== undefined && album.total !== undefined && album.indexed < album.total) || libConfig.index.albumQueue.includes(album.id)" @click="clickIndexAlbum(album.id)">
+              <div v-if="getAlbumIcon(album) !== 'none'" @click="toggleIndexAlbum(album.id)">
                 <component 
-                  :is="libConfig.index.albumQueue.includes(album.id) ? IconUpdate : IconUpdateAlert"
+                  :is="getAlbumIcon(album) === 'update' ? IconUpdate : IconUpdateDot"
                   class="mx-1 w-4 h-4 hover:text-base-content" 
-                  :class="libConfig.index.albumQueue.includes(album.id) ? 'animate-spin' : ''" 
+                  :class="shouldAnimateAlbumIcon(album) ? 'animate-spin' : ''" 
                 />
               </div>
               <span v-if="props.showTotalCount !== false">
@@ -112,7 +112,7 @@
             enter-to-class="max-h-96"
           >
             <div
-              v-if="album.is_expanded && !isEditList && !(libConfig.index.albumQueue as any).includes(album.id)"
+              v-if="album.is_expanded && !isEditList && getAlbumQueueIndex(album.id, libConfig.index.albumQueue as any[]) === -1"
               class="ml-6 mr-2 my-1 p-1 rounded-box bg-base-300/30 border border-base-content/5 shadow-sm"
             >
               <AlbumFolder 
@@ -172,13 +172,14 @@
 import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { VueDraggable } from 'vue-draggable-plus'
-import { listen } from '@tauri-apps/api/event';
+import { listen, emit as tauriEmit } from '@tauri-apps/api/event';
 import { config, libConfig } from '@/common/config';
 import { useUIStore } from '@/stores/uiStore';
 import { scrollToFolder, formatTimestamp } from '@/common/utils';
+import { getAlbumQueueIndex, getAlbumScanState, getAlbumScanIcon, shouldAnimateAlbumScanIcon } from '@/common/scanStatus';
 import { getAllAlbums, setDisplayOrder, addAlbum, editAlbum, removeAlbum, 
          fetchFolder, expandFinalFolder, getFileThumb,
-         getAlbum, listenIndexProgress, listenIndexFinished } from '@/common/api';
+         getAlbum, cancelIndexing as cancelIndexingApi, listenIndexProgress, listenIndexFinished } from '@/common/api';
 import { Album, Folder } from '@/common/types';
 import { useAlbumSelectionProvider, SelectionSource } from '@/composables/useAlbumSelection';
 
@@ -196,7 +197,8 @@ import {
   IconRemove,
   IconRestore,
   IconUpdate,
-  IconUpdateAlert,
+  IconUpdateOff,
+  IconUpdateDot,
   IconRight,
 } from '@/common/icons';
 
@@ -254,6 +256,42 @@ const isDragging = ref(false);  // dragging albums
 
 const getAlbumById = (id: number) => albums.value.find(album => album.id === id);
 const selectedAlbum = computed(() => getAlbumById(selection.albumId.value)) || {};
+const isAlbumQueued = (albumId: number) =>
+  getAlbumQueueIndex(albumId, libConfig.index.albumQueue as any[]) >= 0;
+const syncIndexStatus = () => {
+  if ((libConfig.index.albumQueue as any[]).length > 0) {
+    libConfig.index.status = 1;
+  } else if ((libConfig.index.pausedAlbumIds as any[]).length > 0) {
+    libConfig.index.status = 2;
+  } else {
+    libConfig.index.status = 0;
+  }
+};
+const isAlbumPaused = (albumId: number | null | undefined) =>
+  (libConfig.index.pausedAlbumIds as any[]).some(id => Number(id) === Number(albumId || 0));
+const removePausedAlbum = (albumId: number | null | undefined) => {
+  libConfig.index.pausedAlbumIds = (libConfig.index.pausedAlbumIds as any[]).filter(
+    id => Number(id) !== Number(albumId || 0)
+  );
+};
+const addPausedAlbum = (albumId: number | null | undefined) => {
+  if (Number(albumId || 0) <= 0 || isAlbumPaused(albumId)) return;
+  (libConfig.index.pausedAlbumIds as any[]).push(Number(albumId));
+};
+const getAlbumStatus = (album: any) =>
+  getAlbumScanState({
+    albumId: album?.id,
+    albumQueue: libConfig.index.albumQueue as any[],
+    pausedAlbumIds: libConfig.index.pausedAlbumIds as any[],
+  });
+const isAlbumScanning = (albumId: number) =>
+  getAlbumScanState({
+    albumId,
+    albumQueue: libConfig.index.albumQueue as any[],
+    pausedAlbumIds: libConfig.index.pausedAlbumIds as any[],
+  }) === 'scanning';
+const getAlbumIcon = (album: any) => getAlbumScanIcon(getAlbumStatus(album));
+const shouldAnimateAlbumIcon = (album: any) => shouldAnimateAlbumScanIcon(getAlbumStatus(album));
 
 // Get menu items for a specific album (function for lazy evaluation)
 const getMoreMenuItems = (album: any) => {
@@ -267,11 +305,11 @@ const getMoreMenuItems = (album: any) => {
       }
     },
     {
-      label: localeMsg.value.menu.album.index,
-      icon: IconUpdate,
-      action: () => {
-        clickIndexAlbum(album.id);
-      }
+      label: isAlbumQueued(album.id)
+        ? localeMsg.value.menu.album.pause_scan
+        : localeMsg.value.menu.album.index,
+      icon: isAlbumQueued(album.id) ? IconUpdateOff : IconUpdate,
+      action: () => toggleIndexAlbum(album.id)
     },
     {
       label: "-",   // separator
@@ -434,6 +472,8 @@ const clickEditAlbum = async (folderPathParam: string, newName: string, newDescr
       showAlbumEdit.value = false;
       
       // add the new album to the index queue
+      libConfig.index.status = 1;
+      removePausedAlbum(newAlbum.id);
       libConfig.index.albumQueue.push(newAlbum.id);   
     }
   } else {
@@ -449,20 +489,72 @@ const clickEditAlbum = async (folderPathParam: string, newName: string, newDescr
 
 /// Index an album
 const clickIndexAlbum = async (albumId: number) => {
-  if (!(libConfig.index.albumQueue as any).includes(albumId)) {
+  removePausedAlbum(albumId);
+  if (getAlbumQueueIndex(albumId, libConfig.index.albumQueue as any[]) === -1) {
     libConfig.index.albumQueue.push(albumId);
     libConfig.index.status = 1;
   }
 }
 
+const toggleIndexAlbum = async (albumId: number) => {
+  if (isAlbumQueued(albumId)) {
+    await clickCancelIndexAlbum(albumId);
+  } else {
+    await clickIndexAlbum(albumId);
+  }
+}
+
+/// Cancel indexing for an album
+const clickCancelIndexAlbum = async (albumId: number) => {
+  const index = getAlbumQueueIndex(albumId, libConfig.index.albumQueue as any[]);
+  if (index === -1) return;
+
+  // Keep queue handling aligned with Content.vue cancel behavior.
+  if (index === 0) {
+    libConfig.index.albumQueue.shift();
+    await cancelIndexingApi(albumId);
+    addPausedAlbum(albumId);
+    if (libConfig.index.albumQueue.length > 0) {
+      // Resume queue on next waiting album.
+      syncIndexStatus();
+      setTimeout(() => {
+        tauriEmit('trigger-next-album');
+      }, 1000);
+    } else {
+      syncIndexStatus();
+    }
+  } else {
+    libConfig.index.albumQueue.splice(index, 1);
+    addPausedAlbum(albumId);
+    syncIndexStatus();
+  }
+}
+
 /// Remove an album from the list
 const clickRemoveAlbum = async () => {
+  const albumId = selection.albumId.value;
+  if (albumId > 0 && isAlbumScanning(albumId)) {
+    await clickCancelIndexAlbum(albumId);
+  }
+
   const removedAlbum = await removeAlbum(selection.albumId.value);
   if(removedAlbum) {
     showRemoveAlbumMsgbox.value = false;
 
+    // Keep scan state consistent when the removed album was queued or paused.
+    libConfig.index.albumQueue = (libConfig.index.albumQueue as any[]).filter(
+      id => Number(id) !== Number(albumId)
+    );
+    removePausedAlbum(albumId);
+    if ((libConfig.index.albumQueue as any[]).length === 0 && (libConfig.index.pausedAlbumIds as any[]).length === 0) {
+      libConfig.index.albumName = '';
+      libConfig.index.indexed = 0;
+      libConfig.index.total = 0;
+    }
+    syncIndexStatus();
+
     // remove the album from the list
-    albums.value = albums.value.filter(album => album.id !== selection.albumId.value);
+    albums.value = albums.value.filter(album => album.id !== albumId);
     showAlbumEdit.value = false; // Close the edit dialog if it's open
 
     selection.resetSelection();

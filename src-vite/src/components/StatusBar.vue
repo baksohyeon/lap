@@ -10,7 +10,7 @@
         <span>{{ $t('statusbar.files_summary', { count: totalFileCount.toLocaleString(), size: formatFileSize(totalFileSize) }) }}</span>
       </div>
 
-      <template v-if="selectedItemIndex >= 0">
+      <template v-if="selectedItemIndex >= 0 && hasRealSelectedFile">
         <div class="flex items-center gap-1 shink-0">
           <component :is="selectMode ? IconCheckAll : IconChecked" class="t-icon-size-xs" />
           <span>
@@ -56,17 +56,17 @@
       </template>
     </div>
     <div
-      v-if="showDebugBadge"
-      class="absolute right-2 shrink-0 px-2 py-1 rounded-full bg-warning/30 text-warning text-[10px] font-mono font-semibold tracking-wide"
+      v-if="showUpdateIcon"
+      class="absolute right-1 shrink-0 px-1 py-1 flex items-center gap-1 rounded-full bg-base-300 text-primary/70 text-[11px] font-mono"
     >
-      DEBUG {{ appVersion ? `v${appVersion}` : '' }}
+      <component :is="updateIconComponent" class="t-icon-size-xs shrink-0" :class="{ 'animate-spin': isUpdateAnimating }" />
+      <span v-if="scanText" class="truncate text-right">{{ scanText }}</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import { getVersion } from '@tauri-apps/api/app';
+import { computed } from 'vue';
 import {
   formatFileSize,
   shortenFilename,
@@ -86,6 +86,8 @@ import {
   IconFileSearch,
   IconZoomIn,
   IconZoomOut,
+  IconUpdate,
+  IconUpdateDot,
 } from '@/common/icons';
 
 const props = defineProps({
@@ -141,27 +143,40 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  showUpdateIcon: {
+    type: Boolean,
+    default: false,
+  },
+  isUpdateAnimating: {
+    type: Boolean,
+    default: false,
+  },
+  updateIcon: {
+    type: String as () => 'update' | 'dot',
+    default: 'update',
+  },
+  scanText: {
+    type: String,
+    default: '',
+  },
 });
 
+const updateIconComponent = computed(() =>
+  props.updateIcon === 'dot' ? IconUpdateDot : IconUpdate
+);
+
 const hasData = computed(() => props.fileList.length > 0 || !!props.selectedFile);
-const showDebugBadge = import.meta.env.DEV;
-const appVersion = ref('');
 const currentFile = computed(() => {
   if (props.selectedFile) return props.selectedFile;
   return props.fileList[props.selectedItemIndex];
+});
+const hasRealSelectedFile = computed(() => {
+  const file = currentFile.value;
+  return !!file && !file.isPlaceholder;
 });
 const containerClass = computed(() => {
   const base = 'px-2 h-8 flex items-center justify-between text-sm cursor-default bg-base-300/80 backdrop-blur-md';
   if (props.isEmbedded) return base;
   return `${base} absolute bottom-0 left-0 right-0 z-30`;
-});
-
-onMounted(async () => {
-  if (!showDebugBadge) return;
-  try {
-    appVersion.value = await getVersion();
-  } catch (error) {
-    console.error('Failed to get app version for debug badge:', error);
-  }
 });
 </script>

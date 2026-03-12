@@ -47,6 +47,7 @@
     "index": {
       "wait_index": "Warte auf Scan...",
       "indexing": "Scanne '{album}'... {count} / {total}",
+      "paused": "Scan pausiert",
       "description": "Generiere Vorschaubilder für Suche und Vorschau. Dies kann einige Minuten dauern.",
       "cancel": "Scan abbrechen"
     }
@@ -302,6 +303,7 @@
       "add": "Album hinzufügen...",
       "edit": "Album bearbeiten...",
       "index": "Album scannen",
+      "pause_scan": "Scannen pausieren",
       "include_in_search": "In Suche einbeziehen",
       "exclude_from_search": "Vom Suchen ausschließen",
       "remove": "Album entfernen",

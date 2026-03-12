@@ -54,7 +54,9 @@
 
             <div class="flex-1"></div>
 
-            <TButton class="mt-auto"
+            <TButton 
+              class="mt-auto"
+              :class="showDebugBadge ? 'text-warning': ''"
               :buttonSize="'large'" 
               :icon="IconSettings" 
               :text="$t('sidebar.settings')" 
@@ -230,6 +232,7 @@ const showManageLibraries = ref(false);
 const isDraggingSplitter = ref(false);
 
 const appName = ref('');
+const showDebugBadge = import.meta.env.DEV;
 const toolTipRef = ref<InstanceType<typeof ToolTip> | null>(null);
 const updateAvailable = ref(false);
 const isCheckingUpdate = ref(false);
@@ -421,6 +424,9 @@ const doSwitchLibrary = async (libraryId: string) => {
     // Save current library state before switching (preserves the indexing queue)
     await libConfig.save();
 
+    // Prevent auto-save during shutdown of the current library's background work.
+    libConfig._initialized = false;
+
     // Cancel any running indexing before switching
     if (libConfig.index.status > 0 && libConfig.index.albumQueue.length > 0) {
       const queueCopy = [...libConfig.index.albumQueue];
@@ -436,6 +442,7 @@ const doSwitchLibrary = async (libraryId: string) => {
     
     window.location.reload();
   } catch (error) {
+    libConfig._initialized = true;
     isSwitchingLibrary.value = false;
     console.error('Failed to switch library:', error);
   }
