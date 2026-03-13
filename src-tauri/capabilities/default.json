@@ -55,6 +55,8 @@
     "os:allow-hostname",
     "dialog:default",
     "os:default",
+    "process:default",
+    "process:allow-restart",
     "shell:default",
     "fs:default",
     "fs:scope",

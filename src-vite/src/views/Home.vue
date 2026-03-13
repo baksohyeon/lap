@@ -91,7 +91,7 @@
                 :class="isUpdateActionEnabled ? 'badge-primary cursor-pointer' : 'badge-neutral/60 cursor-default'"
                 :disabled="isInstallingUpdate"
                 :title="updateButtonTooltip"
-                @click="installAvailableUpdate"
+                @click="handleUpdateAction"
               >
                 <span v-if="isInstallingUpdate" class="loading loading-spinner loading-xs"></span>
                 <span>{{ updateButtonText }}</span>
@@ -155,9 +155,8 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { getName } from '@tauri-apps/api/app';
-import { check } from '@tauri-apps/plugin-updater';
-import { relaunch } from '@tauri-apps/plugin-process';
 import { config, libConfig } from '@/common/config';
+import { useAppUpdater } from '@/common/updater';
 import { useUIStore } from '@/stores/uiStore';
 import { isWin, isMac } from '@/common/utils';
 import { getAppConfig, switchLibrary, cancelIndexing, cancelFaceIndex } from '@/common/api';
@@ -234,40 +233,17 @@ const isDraggingSplitter = ref(false);
 const appName = ref('');
 const showDebugBadge = import.meta.env.DEV;
 const toolTipRef = ref<InstanceType<typeof ToolTip> | null>(null);
-const updateAvailable = ref(false);
-const isCheckingUpdate = ref(false);
-const isInstallingUpdate = ref(false);
-const isUpdateReadyToRestart = ref(false);
-const updateVersion = ref('');
-let currentUpdate: any = null;
-const restartLabel = computed(() => localeMsg.value.settings.about.auto_update.restart);
-
-const updateButtonTooltip = computed(() => {
-  if (isInstallingUpdate.value) {
-    return localeMsg.value.settings.about.auto_update.installing;
-  }
-  if (isUpdateReadyToRestart.value) {
-    return restartLabel.value;
-  }
-  if (updateAvailable.value && updateVersion.value) {
-    return localeMsg.value.settings.about.auto_update.new_version_available.replace('{version}', updateVersion.value);
-  }
-  return localeMsg.value.settings.about.auto_update.update;
-});
-
-const updateButtonText = computed(() => {
-  if (isInstallingUpdate.value) {
-    return localeMsg.value.settings.about.auto_update.installing;
-  }
-  if (isUpdateReadyToRestart.value) {
-    return restartLabel.value;
-  }
-  return localeMsg.value.settings.about.auto_update.update;
-});
-
-const isUpdateActionEnabled = computed(() =>
-  updateAvailable.value || isUpdateReadyToRestart.value
-);
+const {
+  updateAvailable,
+  isCheckingUpdate,
+  isInstallingUpdate,
+  isUpdateReadyToRestart,
+  updateButtonTooltip,
+  updateButtonText,
+  isUpdateActionEnabled,
+  checkForUpdates,
+  handleUpdateAction,
+} = useAppUpdater(localeMsg, toolTipRef);
 
 // buttons
 const buttons = computed(() =>  [
@@ -337,85 +313,8 @@ onMounted(async () => {
     console.error('Failed to get app name:', e);
   }
 
-  void autoCheckForUpdates();
+  void checkForUpdates(false);
 });
-
-function getErrorMessage(error: unknown, fallback: string) {
-  if (typeof error === 'string' && error.trim()) return error;
-  if (error && typeof error === 'object' && 'message' in error && typeof (error as any).message === 'string') {
-    return (error as any).message;
-  }
-  return fallback;
-}
-
-const UPDATE_CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
-const UPDATE_CHECK_KEY = 'lap_last_update_check';
-
-async function autoCheckForUpdates() {
-  if (isCheckingUpdate.value) return;
-
-  // Throttle: skip if last check was less than 24 hours ago
-  const lastCheck = localStorage.getItem(UPDATE_CHECK_KEY);
-  if (lastCheck && Date.now() - Number(lastCheck) < UPDATE_CHECK_INTERVAL) {
-    return;
-  }
-
-  isCheckingUpdate.value = true;
-  updateAvailable.value = false;
-  updateVersion.value = '';
-  currentUpdate = null;
-
-  try {
-    const update = await check();
-    localStorage.setItem(UPDATE_CHECK_KEY, String(Date.now()));
-    if (!update) return;
-
-    updateAvailable.value = true;
-    updateVersion.value = update.version;
-    currentUpdate = update;
-    toolTipRef.value?.showTip(localeMsg.value.settings.about.auto_update.new_version_available.replace('{version}', update.version));
-  } catch (error: unknown) {
-    console.error('Failed to auto check for updates:', error);
-  } finally {
-    isCheckingUpdate.value = false;
-  }
-}
-
-async function installAvailableUpdate() {
-  if (isInstallingUpdate.value) return;
-
-  if (isUpdateReadyToRestart.value) {
-    try {
-      await relaunch();
-    } catch (error: unknown) {
-      const message = getErrorMessage(error, localeMsg.value.settings.about.auto_update.failed_install);
-      console.error('Failed to relaunch after update:', error);
-      toolTipRef.value?.showTip(message, true);
-    }
-    return;
-  }
-
-  if (!currentUpdate) return;
-
-  try {
-    isInstallingUpdate.value = true;
-    toolTipRef.value?.showTip(localeMsg.value.settings.about.auto_update.downloading_update);
-    await currentUpdate.downloadAndInstall();
-    updateAvailable.value = false;
-    updateVersion.value = '';
-    currentUpdate = null;
-    isUpdateReadyToRestart.value = true;
-    toolTipRef.value?.showTip(
-      localeMsg.value.settings.about.auto_update.update_installed_waiting_restart
-    );
-  } catch (error: unknown) {
-    const message = getErrorMessage(error, localeMsg.value.settings.about.auto_update.failed_install);
-    console.error('Failed to install update:', error);
-    toolTipRef.value?.showTip(message, true);
-  } finally {
-    isInstallingUpdate.value = false;
-  }
-}
 
 const doSwitchLibrary = async (libraryId: string) => {
   try {

@@ -14,7 +14,19 @@
       <div class="space-y-3 text-left text-base-content/30">
         <div class="grid grid-cols-[84px_1fr] items-start gap-3 text-sm">
           {{ $t('settings.about.package.version') }}
-          <div>{{ packageInfo.version }}</div>
+          <div class="flex items-center gap-2">
+            <span>{{ packageInfo.version }}</span>
+            <button
+              class="badge badge-sm border-0 px-2 py-2 font-medium transition-colors"
+              :class="isUpdateActionEnabled ? 'badge-primary cursor-pointer' : 'badge-neutral/60 cursor-pointer'"
+              :disabled="isInstallingUpdate || isCheckingUpdate"
+              :title="updateButtonTooltip"
+              @click="handleUpdateAction"
+            >
+              <span v-if="isInstallingUpdate || isCheckingUpdate" class="loading loading-spinner loading-xs"></span>
+              <span>{{ updateButtonText }}</span>
+            </button>
+          </div>
         </div>
 
         <div class="grid grid-cols-[84px_1fr] items-start gap-3 text-sm">
@@ -29,15 +41,15 @@
 
         <div class="grid grid-cols-[84px_1fr] items-center gap-1 text-sm">
           {{ $t('settings.about.package.link') }}
-          <div class="flex items-center justify-start gap-2">
-            <a
+          <div class="flex  flex-wrap items-center justify-start gap-2">
+            <!-- <a
               :href="packageInfo.homepage"
               target="_blank"
               class="inline-flex items-center gap-1.5 rounded-box px-2 py-1 text-xs transition-colors hover:bg-base-100/50 hover:text-primary"
             >
               <IconLink class="t-icon-size-sm" />
               <span>{{ $t('settings.about.package.website') }}</span>
-            </a>
+            </a> -->
             <a
               :href="packageInfo.repository"
               target="_blank"
@@ -47,24 +59,37 @@
               <span>{{ $t('settings.about.package.github') }}</span>
             </a>
             <a
+              :href="issuesUrl"
+              target="_blank"
+              class="inline-flex items-center gap-1.5 rounded-box px-2 py-1 text-xs transition-colors hover:bg-base-100/50 hover:text-primary"
+            >
+              <IconFocus class="t-icon-size-sm" />
+              <span>{{ $t('settings.about.package.feedback') }}</span>
+            </a>
+            <!-- <a
               :href="privacyUrl"
               target="_blank"
               class="inline-flex items-center gap-1.5 rounded-box px-2 py-1 text-xs transition-colors hover:bg-base-100/50 hover:text-primary"
             >
               <IconLock class="t-icon-size-sm" />
               <span>{{ $t('settings.about.package.privacy') }}</span>
-            </a>
+            </a> -->
           </div>
         </div>
       </div>
     </div>
+
+    <ToolTip ref="toolTipRef" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { getPackageInfo, getBuildTime } from '@/common/api';
-import { IconGithub, IconLink, IconLock } from '@/common/icons';
+import { useAppUpdater } from '@/common/updater';
+import { IconGithub, IconLink, IconLock, IconFocus } from '@/common/icons';
+import ToolTip from '@/components/ToolTip.vue';
 
 const packageInfo = ref<any>({
   name: '',
@@ -81,6 +106,23 @@ const privacyUrl = computed(() => {
   if (!repo) return 'https://github.com/julyx10/lap/blob/main/PRIVACY.md';
   return repo.endsWith('/') ? `${repo}blob/main/PRIVACY.md` : `${repo}/blob/main/PRIVACY.md`;
 });
+const issuesUrl = computed(() => {
+  const repo = packageInfo.value.repository || '';
+  if (!repo) return 'https://github.com/julyx10/lap/issues';
+  return repo.endsWith('/') ? `${repo}issues` : `${repo}/issues`;
+});
+const { locale, messages } = useI18n();
+const localeMsg = computed(() => messages.value[locale.value] as any);
+const toolTipRef = ref<InstanceType<typeof ToolTip> | null>(null);
+const {
+  isCheckingUpdate,
+  isInstallingUpdate,
+  updateButtonTooltip,
+  updateButtonText,
+  isUpdateActionEnabled,
+  checkForUpdates,
+  handleUpdateAction,
+} = useAppUpdater(localeMsg, toolTipRef);
 
 onMounted(async () => {
   try {
@@ -90,5 +132,7 @@ onMounted(async () => {
   } catch (error) {
     console.error('Failed to load about info:', error);
   }
+
+  void checkForUpdates(false);
 });
 </script>

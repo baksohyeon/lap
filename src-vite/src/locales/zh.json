@@ -885,7 +885,8 @@
         "license": "许可证",
         "link": "链接",
         "website": "网站",
-        "github": "GitHub",
+        "github": "去 GitHub 点赞",
+        "feedback": "问题反馈",
         "privacy": "隐私"
       },
       "auto_update": {

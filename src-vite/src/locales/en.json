@@ -885,7 +885,8 @@
         "license": "License",
         "link": "Link",
         "website": "Website",
-        "github": "GitHub",
+        "github": "Star on GitHub",
+        "feedback": "Feedback",
         "privacy": "Privacy"
       },
       "auto_update": {

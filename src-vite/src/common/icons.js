@@ -96,6 +96,7 @@ export { default as IconSearchOff } from '@/assets/icons/search-off.svg';
 export { default as IconMore } from '@/assets/icons/more.svg';
 export { default as IconDot } from '@/assets/icons/dot.svg';
 export { default as IconEdit } from '@/assets/icons/edit.svg';
+export { default as IconFocus } from '@/assets/icons/focus.svg';
 export { default as IconPrint } from '@/assets/icons/print.svg';
 export { default as IconRefresh } from '@/assets/icons/refresh.svg';
 export { default as IconUpdate } from '@/assets/icons/update.svg';

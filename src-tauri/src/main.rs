@@ -42,6 +42,7 @@ fn main() {
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(t_ai::AiState(std::sync::Mutex::new(t_ai::AiEngine::new())))
         .manage(t_face::FaceState(std::sync::Arc::new(
