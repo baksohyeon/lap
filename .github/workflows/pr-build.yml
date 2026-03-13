@@ -73,6 +73,36 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-aarch64-cargo-
 
+      - name: Patch ffmpeg-sys-next (macOS arm64 compatibility)
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cargo fetch --manifest-path src-tauri/Cargo.toml
+
+          BUILD_RS=$(find ~/.cargo/registry/src -type f -path "*/ffmpeg-sys-next-8.0.1/build.rs" | head -n 1)
+          if [ -z "${BUILD_RS}" ]; then
+            echo "Could not find ffmpeg-sys-next build.rs"
+            exit 1
+          fi
+
+          perl -0777 -i -pe 's@configure\.arg\("--extra-cflags=-march=native -mtune=native"\);\n@if matches!(env::var("CARGO_CFG_TARGET_OS").as_deref(), Ok("macos"))\n            && matches!(env::var("CARGO_CFG_TARGET_ARCH").as_deref(), Ok("aarch64")) {\n            configure.arg("--disable-asm");\n        } else {\n            configure.arg("--extra-cflags=-march=native -mtune=native");\n        }\n@' "$BUILD_RS"
+
+          echo "Patched file: $BUILD_RS"
+          if ! grep -q 'CARGO_CFG_TARGET_OS' "$BUILD_RS"; then
+            echo "Patch did not apply as expected."
+            exit 1
+          fi
+          grep -n "CARGO_CFG_TARGET_OS\\|disable-asm\\|march=native" "$BUILD_RS"
+
+      - name: Clear cached ffmpeg-sys-next build artifacts
+        shell: bash
+        run: |
+          rm -rf src-tauri/target/aarch64-apple-darwin/release/build/ffmpeg-sys-next-*
+          rm -rf src-tauri/target/aarch64-apple-darwin/debug/build/ffmpeg-sys-next-*
+          rm -rf src-tauri/target/release/build/ffmpeg-sys-next-*
+          rm -rf src-tauri/target/debug/build/ffmpeg-sys-next-*
+
       - name: Install frontend dependencies
         run: pnpm install
         working-directory: src-vite
@@ -94,6 +124,30 @@ jobs:
         with:
           projectPath: .
           args: --target aarch64-apple-darwin --verbose --bundles app,dmg --config '{"bundle":{"createUpdaterArtifacts":false}}'
+
+      - name: Verify ffmpeg configure flags
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          CONFIG_MAK=$(find src-tauri/target -type f -path "*/ffmpeg-sys-next-*/out/ffmpeg-*/ffbuild/config.mak" | head -n 1)
+          if [ -z "${CONFIG_MAK}" ]; then
+            echo "Could not find ffmpeg config.mak"
+            exit 1
+          fi
+
+          echo "Using ffmpeg config: $CONFIG_MAK"
+          grep -n "FFMPEG_CONFIGURATION" "$CONFIG_MAK"
+
+          if ! grep -q -- "--disable-asm" "$CONFIG_MAK"; then
+            echo "Expected --disable-asm was not found in ffmpeg configuration."
+            exit 1
+          fi
+
+          if grep -q -- "-march=native" "$CONFIG_MAK"; then
+            echo "Unexpected -march=native found in ffmpeg configuration."
+            exit 1
+          fi
 
       - name: Notarize and Staple
         env:
