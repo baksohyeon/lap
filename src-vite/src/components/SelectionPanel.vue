@@ -24,7 +24,12 @@
           </span>
         </div>
         <div class="flex flex-wrap items-center gap-1">
-          <button class="btn btn-xs btn-ghost text-base-content/70 hover:text-base-content" @click="$emit('selectAll')">
+          <button
+            class="btn btn-xs btn-ghost"
+            :class="fileCount === 0 ? 'text-base-content/30' : 'text-base-content/70 hover:text-base-content'"
+            :disabled="fileCount === 0"
+            @click="$emit('selectAll')"
+          >
             <IconCheckAll class="w-3.5 h-3.5" />
             {{ $t('menu.select.all') }}
           </button>
@@ -51,23 +56,17 @@
         </div>
         <div class="border-t border-base-content/10"></div>
 
-        <div v-if="selectedFiles.length === 0" class="p-4 text-center text-base-content/40 space-y-3">
-          <p class="text-xs font-medium leading-relaxed">{{ $t('info_panel.select_hint') }}</p>
-        </div>
-
-        <template v-else>
-          <div class="space-y-2 text-xs">
-            <div class="flex items-center gap-1 text-base-content/55 font-semibold">
-              <span>{{ $t('toolbar.filter.select_count', { count: selectedCount.toLocaleString() }) }} ({{ formatFileSize(selectedSize) }})</span>
-            </div>
-            <div class="flex items-center gap-1 text-base-content/50 font-medium">
-              <span>{{ multiSelectTypeBreakdown }}</span>
-            </div>
-            <div v-if="multiSelectDateRange" class="flex items-center gap-1 text-base-content/50 font-medium">
-              <span>{{ multiSelectDateRange }}</span>
-            </div>
+        <div class="space-y-2 text-xs">
+          <div class="flex items-center gap-1 text-base-content/55 font-semibold">
+            <span>{{ $t('toolbar.filter.select_count', { count: selectedCount.toLocaleString() }) }} ({{ formatFileSize(selectedSize) }})</span>
           </div>
-        </template>
+          <div class="flex items-center gap-1 text-base-content/50 font-medium">
+            <span>{{ multiSelectTypeBreakdown }}</span>
+          </div>
+          <div v-if="multiSelectDateRange" class="flex items-center gap-1 text-base-content/50 font-medium">
+            <span>{{ multiSelectDateRange }}</span>
+          </div>
+        </div>
       </div>
 
       <div class="rounded-box p-3 space-y-3 bg-base-300/30 border border-base-content/5 shadow-sm">
@@ -206,6 +205,10 @@ const props = defineProps({
     type: Array as () => any[],
     default: () => [],
   },
+  fileCount: {
+    type: Number,
+    default: 0,
+  },
   selectedCount: {
     type: Number,
     default: 0,
@@ -294,7 +297,7 @@ const rotateDisplayLabel = computed(() => {
   if (multiSelectRotate.value === null || multiSelectRotate.value === 0) {
     return rotateText;
   }
-  return `${rotateText} - ${multiSelectRotate.value}°`;
+  return `${rotateText} (${multiSelectRotate.value}°)`;
 });
 
 function getRatingLabel(rating: number) {

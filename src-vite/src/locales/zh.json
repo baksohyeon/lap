@@ -202,6 +202,8 @@
       "信息",
       "调整"
     ],
+    "empty_title": "当前列表为空",
+    "empty_desc": "请添加文件，或更新当前筛选范围以在此显示内容。",
     "select_hint": "点击项目以选择或取消选择。按住 ⇧ Shift 键可选择范围。",
     "select_limit_hint": "全选仅会选择前 {count} 个文件。",
     "edit_disabled": "请选择单个图片进行编辑",
@@ -223,8 +225,8 @@
         "similar": "相似图片"
       },
       "scanning": "扫描重复项中...",
-      "empty_title": "当前列表没有潜在重复项",
-      "empty_desc": "可以放宽筛选条件，或在其他文件列表中执行去重。",
+      "empty_title": "未发现重复项",
+      "empty_desc": "可以添加更多文件，或更新当前筛选范围后再试。",
       "similar_title": "相似图片功能将在下一步提供",
       "similar_desc": "这个标签页将用于视觉上相似的图片分组，当前先保留完全重复的清理流程。",
       "reclaimable_size": "可回收",
@@ -629,6 +631,8 @@
     "metadata": "元数据",
     "location": "地点",
     "map": "地图",
+    "empty_title": "未选择文件",
+    "empty_desc": "请选择一个文件以查看其详细信息和元数据。",
     "album_name": "相册",
     "name": "文件名",
     "folder": "文件夹",

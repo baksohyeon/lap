@@ -43,7 +43,7 @@
             ]"
             @click="selectSmartTag(item.id)"
           >
-            <IconBolt class="mx-1 h-5 shrink-0" />
+            <IconSmartTag class="mx-1 h-5 shrink-0" />
             <span class="sidebar-item-label">{{ item.label }}</span>
           </div>
         </li>
@@ -129,8 +129,8 @@ import { config, libConfig } from '@/common/config';
 import { getAllTags, renameTag, deleteTag, createTag } from '@/common/api';
 import { 
   IconAdd,
+  IconSmartTag,
   IconTag,
-  IconBolt,
   IconDot,
   IconMore, 
   IconRename, 

@@ -310,6 +310,16 @@
       </div>
     </div>
 
+    <div v-else class="mb-2 px-2 flex-1 overflow-y-auto overflow-x-hidden space-y-3 flex flex-col bg-base-200/50">
+      <div class="rounded-box p-4 bg-base-300/30 border border-base-content/5 shadow-sm flex-1 flex items-center justify-center">
+        <div class="text-center text-base-content/40 space-y-3 max-w-[260px]">
+          <IconFile class="w-8 h-8 mx-auto text-base-content/30" />
+          <p class="text-xs font-medium">{{ $t('file_info.empty_title') }}</p>
+          <p class="text-xs text-base-content/40">{{ $t('file_info.empty_desc') }}</p>
+        </div>
+      </div>
+    </div>
+
     <ToolTip ref="toolTipRef" />
   </div>
 </template>

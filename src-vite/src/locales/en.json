@@ -202,6 +202,8 @@
       "Info",
       "Adjust"
     ],
+    "empty_title": "This list is empty",
+    "empty_desc": "Add files or update the current filter to show items here.",
     "select_hint": "Click an item to select or deselect it. Hold ⇧ Shift to select a range.",
     "select_limit_hint": "Select all only selects the first {count} files.",
     "edit_disabled": "Select a single image to edit",
@@ -223,8 +225,8 @@
         "similar": "Similar"
       },
       "scanning": "Scanning duplicates...",
-      "empty_title": "No potential duplicates in this list",
-      "empty_desc": "Try widening filters or running dedup on another file list.",
+      "empty_title": "No duplicates found",
+      "empty_desc": "Try adding more files or updating the current filter range.",
       "similar_title": "Similar photos are coming next",
       "similar_desc": "This tab will be used for visually similar images after the exact-duplicate workflow is expanded.",
       "reclaimable_size": "Reclaimable",
@@ -629,6 +631,8 @@
     "metadata": "Metadata",
     "location": "Location",
     "map": "Map",
+    "empty_title": "No file selected",
+    "empty_desc": "Select a file to view its details and metadata.",
     "album_name": "Album",
     "name": "File name",
     "folder": "Folder",

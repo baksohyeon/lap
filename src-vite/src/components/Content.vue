@@ -98,7 +98,6 @@
           <div class="flex flex-row items-center gap-2 px-2 shrink-0 group">
             <SliderInput v-model="config.settings.grid.size" 
               :min="120" :max="360" :step="1" label="" :slider_width="80" 
-              :disabled="showQuickView" 
             />
           </div>
 
@@ -106,7 +105,6 @@
           <TButton
             :icon="[IconCard, IconTile, IconJustified][config.settings.grid.style]"
             :tooltip="localeMsg.settings.grid_view.style_options[config.settings.grid.style]"
-            :disabled="showQuickView"
             @click="cycleGridStyle"
           />
 
@@ -119,7 +117,6 @@
             }" 
             :tooltip="localeMsg.settings.filmstrip_view.title"
             :selected="config.settings.grid.showFilmStrip"
-            :disabled="showQuickView"
             @click="toggleFilmstripView"
           />
 
@@ -129,7 +126,6 @@
             :icon="IconSelection"
             :tooltip="$t('toolbar.filter.select_mode')"
             :selected="selectMode"
-            :disabled="fileList.length === 0 || showQuickView"
             @click="handleSelectMode(!selectMode)"
           />
 
@@ -138,7 +134,6 @@
             :icon="IconSimilar"
             :tooltip="$t('toolbar.tooltip.open_dedup')"
             :selected="isDedupPanelOpen"
-            :disabled="showQuickView || fileList.length === 0"
             @click="toggleDedupPanel"
           />
 
@@ -382,6 +377,7 @@
           />
           <SelectionPanel
             v-else-if="selectMode"
+            :file-count="fileList.length"
             :selected-files="selectedFiles"
             :selected-count="selectedCount"
             :selected-size="selectedSize"
@@ -599,6 +595,7 @@ import {
   IconFolderExpanded,
   IconChecked,
   IconTag,
+  IconSmartTag,
   IconLocation,
   IconCameraAperture,
   IconTrash,
@@ -1093,7 +1090,7 @@ const currentTitleIcon = computed(() => {
             }
           case 2: return IconPhotoSearch;
           case 3: return config.calendar.isMonthly ? IconCalendarMonth : IconCalendarDay;
-          case 4: return IconTag;
+          case 4: return (libConfig.tag as any).tab === 'smart' ? IconSmartTag : IconTag;
           case 5: return IconPersonSearch;
           case 6: return IconLocation;
           case 7: return IconCameraAperture;
@@ -2366,6 +2363,18 @@ watch(() => config.settings.grid.style, () => {
   stopSlideShow();
 });
 
+function disablePreviewModes() {
+  showQuickView.value = false;
+  stopSlideShow();
+}
+
+watch(() => config.settings.grid.size, (newSize, oldSize) => {
+  if (newSize === oldSize) return;
+  if (showQuickView.value || isSlideShow.value) {
+    disablePreviewModes();
+  }
+});
+
 function toggleFilmstripView() {
   showQuickView.value = false;
   config.settings.grid.showFilmStrip = !config.settings.grid.showFilmStrip;
@@ -2924,9 +2933,8 @@ async function updateContent(force = false) {
           contentTitle.value = "";
           return;
         }
-        contentTitle.value =
-          localeMsg.value.tag.smart_items?.[smartTag.id]
-          || smartTag.id;
+        const smartTagLabel = localeMsg.value.tag.smart_items?.[smartTag.id] || smartTag.id;
+        contentTitle.value = `${localeMsg.value.tag.smart_group} > ${smartTagLabel}`;
         getImageSearchFileList(smartTag.prompt, 0, requestId, false, SMART_TAG_SEARCH_THRESHOLD);
       }
     } else {
@@ -3806,8 +3814,6 @@ const invertSelectionInCurrentList = async () => {
 };
 
 const handleSelectMode = (value: any) => {
-  if (value && (fileList.value.length === 0 || showQuickView.value)) return;
-
   selectMode.value = value;
   if(!selectMode.value) {
     showSelectionLimitHint.value = false;
@@ -3819,6 +3825,7 @@ const handleSelectMode = (value: any) => {
       selectedItemIndex.value = 0;
     }
     showQuickView.value = false;
+    stopSlideShow();
     config.rightPanel.show = false;
   }
 };
@@ -3861,6 +3868,7 @@ const toggleDedupPanel = () => {
       return;
     }
     handleSelectMode(false);
+    disablePreviewModes();
     config.rightPanel.mode = 'dedup';
     config.rightPanel.show = true;
   });

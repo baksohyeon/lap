@@ -202,6 +202,8 @@
       "Info",
       "Ajustar"
     ],
+    "empty_title": "Esta lista está vazia",
+    "empty_desc": "Adicione arquivos ou atualize o filtro atual para mostrar itens aqui.",
     "select_hint": "Clique em um item para selecionar ou desmarcar. Segure ⇧ Shift para selecionar um intervalo.",
     "select_limit_hint": "Selecionar tudo seleciona apenas os primeiros {count} arquivos.",
     "edit_disabled": "Selecione uma única imagem para editar",
@@ -629,6 +631,8 @@
     "metadata": "Metadados",
     "location": "Localização",
     "map": "Mapa",
+    "empty_title": "Nenhum arquivo selecionado",
+    "empty_desc": "Selecione um arquivo para ver seus detalhes e metadados.",
     "album_name": "Álbum",
     "name": "Nome",
     "folder": "Pasta",

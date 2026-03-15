@@ -202,6 +202,8 @@
       "Info",
       "Anpassen"
     ],
+    "empty_title": "Diese Liste ist leer",
+    "empty_desc": "Fügen Sie Dateien hinzu oder aktualisieren Sie den aktuellen Filter, damit hier Inhalte angezeigt werden.",
     "select_hint": "Klicken Sie auf ein Element, um es auszuwählen oder abzuwählen. Halten Sie ⇧ Umschalttaste für eine Bereichsauswahl.",
     "select_limit_hint": "Alles auswählen wählt nur die ersten {count} Dateien aus.",
     "edit_disabled": "Wählen Sie ein einzelnes Bild zum Bearbeiten",
@@ -629,6 +631,8 @@
     "metadata": "Metadaten",
     "location": "Ort",
     "map": "Karte",
+    "empty_title": "Keine Datei ausgewählt",
+    "empty_desc": "Wählen Sie eine Datei aus, um ihre Details und Metadaten anzuzeigen.",
     "album_name": "Album",
     "name": "Name",
     "folder": "Ordner",

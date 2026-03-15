@@ -231,6 +231,8 @@ const totalGroupCount = ref(0);
 const totalDuplicateFileCount = ref(0);
 const totalReclaimableBytes = ref(0);
 const albumRootPaths = ref<Map<number, string>>(new Map());
+const dedupStatusPollTimer = ref<ReturnType<typeof setInterval> | null>(null);
+const isPollingDedupStatus = ref(false);
 const duplicateGroups = computed(() =>
   rawGroups.value.map((group: any) => {
     const keepItem = (group.items || []).find((i: any) => i.is_keep === 1) || null;
@@ -440,8 +442,47 @@ async function fetchGroups(preferredGroupId: number | null = null) {
   }
 }
 
+function stopDedupStatusPolling() {
+  if (dedupStatusPollTimer.value) {
+    clearInterval(dedupStatusPollTimer.value);
+    dedupStatusPollTimer.value = null;
+  }
+}
+
+async function handleDedupScanSettled() {
+  stopDedupStatusPolling();
+  isDedupLoading.value = false;
+  await fetchGroups();
+  if (queuedScanKey.value && queuedScanKey.value !== dedupPaneGlobalState.lastScanKey) {
+    queuedScanKey.value = '';
+    await triggerBackendDedup(true);
+  }
+}
+
+function ensureDedupStatusPolling() {
+  if (dedupStatusPollTimer.value) return;
+
+  dedupStatusPollTimer.value = setInterval(async () => {
+    if (isPollingDedupStatus.value) return;
+
+    isPollingDedupStatus.value = true;
+    try {
+      const status = await dedupGetScanStatus();
+      totalGroupCount.value = Math.max(Number(status?.groups || 0), rawGroups.value.length);
+      if (status?.state && status.state !== 'running') {
+        await handleDedupScanSettled();
+      }
+    } catch (error) {
+      console.error('ensureDedupStatusPolling error:', error);
+    } finally {
+      isPollingDedupStatus.value = false;
+    }
+  }, 1000);
+}
+
 async function triggerBackendDedup(force = false) {
   if (!props.dedupScanKey) {
+    stopDedupStatusPolling();
     isDedupLoading.value = false;
     return;
   }
@@ -452,6 +493,7 @@ async function triggerBackendDedup(force = false) {
     totalGroupCount.value = Math.max(Number(status?.groups || 0), rawGroups.value.length);
     if (status?.state === 'running') {
       queuedScanKey.value = props.dedupScanKey;
+      ensureDedupStatusPolling();
       return;
     }
     await fetchGroups();
@@ -466,6 +508,7 @@ async function triggerBackendDedup(force = false) {
     totalGroupCount.value = Math.max(Number(status?.groups || 0), rawGroups.value.length);
     if (status?.state === 'running') {
       queuedScanKey.value = props.dedupScanKey;
+      ensureDedupStatusPolling();
       return;
     }
 
@@ -474,12 +517,14 @@ async function triggerBackendDedup(force = false) {
 
     const latest = await dedupGetScanStatus();
     totalGroupCount.value = Math.max(Number(latest?.groups || 0), rawGroups.value.length);
-    if (latest?.state !== 'running') {
-      isDedupLoading.value = false;
-      await fetchGroups();
+    if (latest?.state === 'running') {
+      ensureDedupStatusPolling();
+    } else {
+      await handleDedupScanSettled();
     }
   } catch (error) {
     console.error('triggerBackendDedup error:', error);
+    stopDedupStatusPolling();
     isDedupLoading.value = false;
   }
 }
@@ -488,6 +533,7 @@ watch(
   () => props.dedupScanKey,
   async (newKey, oldKey) => {
     if (!newKey) {
+      stopDedupStatusPolling();
       isDedupLoading.value = false;
       rawGroups.value = [];
       selectedGroupId.value = null;
@@ -524,6 +570,7 @@ onMounted(async () => {
   await refreshOverview();
   if (status?.state === 'running') {
     isDedupLoading.value = true;
+    ensureDedupStatusPolling();
   } else if (props.dedupScanKey) {
     await fetchGroups();
   }
@@ -533,21 +580,18 @@ onMounted(async () => {
     totalGroupCount.value = Math.max(Number(event?.payload?.groups || 0), totalGroupCount.value);
     if (state === 'running') {
       isDedupLoading.value = true;
+      ensureDedupStatusPolling();
       return;
     }
 
     if (state === 'finished' || state === 'idle' || state === 'error') {
-      isDedupLoading.value = false;
-      await fetchGroups();
-      if (queuedScanKey.value && queuedScanKey.value !== dedupPaneGlobalState.lastScanKey) {
-        queuedScanKey.value = '';
-        await triggerBackendDedup(true);
-      }
+      await handleDedupScanSettled();
     }
   });
 });
 
 onUnmounted(() => {
+  stopDedupStatusPolling();
   if (unlistenDedupProgress.value) {
     unlistenDedupProgress.value();
     unlistenDedupProgress.value = null;

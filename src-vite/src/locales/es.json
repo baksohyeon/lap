@@ -202,6 +202,8 @@
       "Info",
       "Ajustar"
     ],
+    "empty_title": "Esta lista está vacía",
+    "empty_desc": "Agrega archivos o actualiza el filtro actual para mostrar elementos aquí.",
     "select_hint": "Haz clic en un elemento para seleccionarlo o deseleccionarlo. Mantén ⇧ Shift para seleccionar un rango.",
     "select_limit_hint": "Seleccionar todo solo selecciona los primeros {count} archivos.",
     "edit_disabled": "Selecciona una sola imagen para editar",
@@ -629,6 +631,8 @@
     "metadata": "Metadatos",
     "location": "Ubicación",
     "map": "Mapa",
+    "empty_title": "No hay ningún archivo seleccionado",
+    "empty_desc": "Selecciona un archivo para ver sus detalles y metadatos.",
     "album_name": "Álbum",
     "name": "Nombre",
     "folder": "Carpeta",

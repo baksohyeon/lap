@@ -202,6 +202,8 @@
       "Info",
       "Ajuster"
     ],
+    "empty_title": "Cette liste est vide",
+    "empty_desc": "Ajoutez des fichiers ou mettez à jour le filtre actuel pour afficher des éléments ici.",
     "select_hint": "Cliquez sur un élément pour le sélectionner ou le désélectionner. Maintenez ⇧ Maj pour sélectionner une plage.",
     "select_limit_hint": "Tout sélectionner ne sélectionne que les {count} premiers fichiers.",
     "edit_disabled": "Sélectionnez une seule image pour l'éditer",
@@ -629,6 +631,8 @@
     "metadata": "Métadonnées",
     "location": "Lieu",
     "map": "Carte",
+    "empty_title": "Aucun fichier sélectionné",
+    "empty_desc": "Sélectionnez un fichier pour afficher ses détails et ses métadonnées.",
     "album_name": "Album",
     "name": "Nom",
     "folder": "Dossier",
