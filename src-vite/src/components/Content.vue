@@ -1040,7 +1040,7 @@ const currentQueryParams = ref({
   locationAdmin1: "",
   locationName: "",
   isFavorite: false,
-  rating: 0,
+  rating: -1,
   tagId: 0,
   personId: 0,
 });
@@ -1812,7 +1812,7 @@ function buildScanStreamQueryParams() {
     locationAdmin1: "",
     locationName: "",
     isFavorite: false,
-    rating: 0,
+    rating: -1,
     tagId: 0,
     personId: 0,
   };
@@ -2549,7 +2549,7 @@ async function getFileList(
     locationAdmin1 = '', 
     locationName = '', 
     isFavorite = false, 
-    rating = 0,
+    rating = -1,
     tagId = 0,
     personId = 0
   } = {},
@@ -2808,7 +2808,7 @@ async function updateContent(force = false) {
               locationAdmin1: "",
               locationName: "",
               isFavorite: false,
-              rating: 0,
+              rating: -1,
               tagId: 0,
               personId: 0,
             };
@@ -2837,7 +2837,10 @@ async function updateContent(force = false) {
     if(libConfig.favorite.folderId === null) {
       contentTitle.value = "";
     } else {
-      if (libConfig.favorite.rating > 0) {
+      if (libConfig.favorite.rating === 0) {
+        contentTitle.value = localeMsg.value.favorite.unrated;
+        getFileList({ rating: 0 }, requestId);
+      } else if ((libConfig.favorite.rating || 0) > 0) {
         const keyMap: Record<number, string> = {
           5: 'five_stars',
           4: 'four_stars',
@@ -2845,9 +2848,10 @@ async function updateContent(force = false) {
           2: 'two_stars',
           1: 'one_star',
         };
-        const key = keyMap[libConfig.favorite.rating] || '';
-        contentTitle.value = key ? localeMsg.value.favorite[key] : `${libConfig.favorite.rating}★`;
-        getFileList({ rating: libConfig.favorite.rating }, requestId);
+        const rating = Number(libConfig.favorite.rating || 0);
+        const key = keyMap[rating] || '';
+        contentTitle.value = key ? localeMsg.value.favorite[key] : `${rating}★`;
+        getFileList({ rating }, requestId);
       } else if(libConfig.favorite.folderId === 0) { // favorite files
         contentTitle.value = localeMsg.value.favorite.files;
         getFileList({ isFavorite: true }, requestId);

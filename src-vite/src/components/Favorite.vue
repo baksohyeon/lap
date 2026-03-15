@@ -3,7 +3,7 @@
     <div
       :class="[
         'sidebar-item',
-        libConfig.favorite.folderId === 0 && libConfig.favorite.rating === 0 ? 'sidebar-item-selected' : 'sidebar-item-hover',
+        libConfig.favorite.folderId === 0 && libConfig.favorite.rating === null ? 'sidebar-item-selected' : 'sidebar-item-hover',
       ]"
       @click="clickFavoriteFiles()"
     >
@@ -19,6 +19,21 @@
     </div>
     <div class="grow overflow-x-hidden overflow-y-auto">
       <ul>
+        <li>
+          <div
+            :class="[
+              'sidebar-item',
+              libConfig.favorite.rating === 0 ? 'sidebar-item-selected' : 'sidebar-item-hover',
+            ]"
+            @click="clickRating(0)"
+          >
+            <div class="mx-1 flex items-center gap-2 text-sm font-medium text-base-content/70">
+              <IconStar class="w-4 h-4 shrink-0" />
+              <span>{{ $t('favorite.unrated') }}</span>
+            </div>
+            <span v-if="unratedCount" class="sidebar-item-count ml-auto">{{ unratedCount.toLocaleString() }}</span>
+          </div>
+        </li>
         <li v-for="rating in [5, 4, 3, 2, 1]" :key="rating">
           <div
             :class="[
@@ -80,7 +95,7 @@ import { onMounted, ref } from 'vue';
 import { libConfig } from '@/common/config';
 import { getQueryCountAndSum } from '@/common/api';
 
-import { IconHeart, IconStarFilled } from '@/common/icons';
+import { IconHeart, IconStarFilled, IconStar } from '@/common/icons';
 
 // Hidden for now: favorite folder support kept here for easy restore.
 // import { ref, computed, onMounted } from 'vue';
@@ -98,6 +113,7 @@ const props = defineProps({
 });
 
 const favoriteFilesCount = ref(0);
+const unratedCount = ref(0);
 const ratingCounts = ref<Record<number, number>>({
   1: 0,
   2: 0,
@@ -106,7 +122,7 @@ const ratingCounts = ref<Record<number, number>>({
   5: 0,
 });
 
-const buildFavoriteQueryParams = (rating = 0) => ({
+const buildQueryParams = ({ isFavorite = false, rating = -1 } = {}) => ({
   searchFileType: 0,
   sortType: 0,
   sortOrder: 0,
@@ -121,19 +137,22 @@ const buildFavoriteQueryParams = (rating = 0) => ({
   lensModel: "",
   locationAdmin1: "",
   locationName: "",
-  isFavorite: true,
+  isFavorite,
   rating,
   tagId: 0,
   personId: 0,
 });
 
 async function loadCounts() {
-  const total = await getQueryCountAndSum(buildFavoriteQueryParams(0));
+  const total = await getQueryCountAndSum(buildQueryParams({ isFavorite: true }));
   favoriteFilesCount.value = total ? Number(total[0]) : 0;
+
+  const unrated = await getQueryCountAndSum(buildQueryParams({ rating: 0 }));
+  unratedCount.value = unrated ? Number(unrated[0]) : 0;
 
   const entries = await Promise.all(
     [1, 2, 3, 4, 5].map(async (rating) => {
-      const result = await getQueryCountAndSum(buildFavoriteQueryParams(rating));
+      const result = await getQueryCountAndSum(buildQueryParams({ rating }));
       return [rating, result ? Number(result[0]) : 0] as const;
     }),
   );
@@ -182,7 +201,7 @@ function clickFavoriteFiles() {
   libConfig.favorite.albumId = null;
   libConfig.favorite.folderId = 0;    // 0 means favorite files
   libConfig.favorite.folderPath = '';
-  libConfig.favorite.rating = 0;
+  libConfig.favorite.rating = null;
 }
 
 if (libConfig.favorite.folderId !== 0) {

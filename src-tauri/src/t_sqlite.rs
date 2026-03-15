@@ -1529,7 +1529,9 @@ impl AFile {
             conditions.push("a.is_favorite = 1");
         }
 
-        if params.rating > 0 {
+        if params.rating == 0 {
+            conditions.push("(a.rating = 0 OR a.rating IS NULL)");
+        } else if params.rating > 0 {
             conditions.push("a.rating = ?");
             sql_params.push(Box::new(params.rating));
         }
