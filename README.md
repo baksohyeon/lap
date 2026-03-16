@@ -17,6 +17,27 @@ It is built as a privacy-focused alternative to cloud photo services: no forced 
 - Demo: [https://youtu.be/RbKqNKhbVUs](https://youtu.be/RbKqNKhbVUs)
 - Privacy: [PRIVACY.md](PRIVACY.md)
 
+## Download Lap
+
+| Platform | Download | Notes |
+| :-- | :-- | :-- |
+| **macOS (Apple Silicon)** | [Download .dmg (aarch64)](https://github.com/julyx10/lap/releases/latest) | Notarized by Apple, fully tested |
+| **macOS (Intel)** | [Download .dmg (x64)](https://github.com/julyx10/lap/releases/latest) | Notarized by Apple, not fully tested yet |
+| **Linux (Ubuntu/Debian)** | [Download .deb (amd64)](https://github.com/julyx10/lap/releases/latest) | Community testing welcome |
+| **Windows (x64)** | [Download .msi](https://github.com/julyx10/lap/releases/latest) | Tested on Windows 11 |
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/public/screenshots/lap-home-0.1.10_1.png" alt="Lap local photo library manager screenshot" width="900">
+</p>
+
+<p align="center">
+  <img src="docs/public/screenshots/lap-home-0.1.10_2.png" alt="Lap local AI photo search screenshot" width="900">
+</p>
+
+> Screenshot sample images come from [Wikimedia Commons](https://commons.wikimedia.org/).
+
 ## Why Lap
 
 - **No cloud required**: keep your library on your own disk instead of uploading it to a hosted service.
@@ -38,27 +59,6 @@ It is built as a privacy-focused alternative to cloud photo services: no forced 
 
 - **Support more image and video formats** such as RAW photo formats, Live Photos, Motion Photos.
 - **Expand metadata support** for standards commonly used in photography workflows, including EXIF, XMP, and IPTC.
-
-## Download Lap
-
-| Platform | Download | Notes |
-| :-- | :-- | :-- |
-| **macOS (Apple Silicon)** | [Download .dmg (aarch64)](https://github.com/julyx10/lap/releases/latest) | Notarized by Apple, fully tested |
-| **macOS (Intel)** | [Download .dmg (x64)](https://github.com/julyx10/lap/releases/latest) | Notarized by Apple, not fully tested yet |
-| **Linux (Ubuntu/Debian)** | [Download .deb (amd64)](https://github.com/julyx10/lap/releases/latest) | Community testing welcome |
-| **Windows (x64)** | [Download .msi](https://github.com/julyx10/lap/releases/latest) | Tested on Windows 11 |
-
-## Screenshots
-
-<p align="center">
-  <img src="docs/public/screenshots/lap-home-0.1.10_1.png" alt="Lap local photo library manager screenshot" width="900">
-</p>
-
-<p align="center">
-  <img src="docs/public/screenshots/lap-home-0.1.10_2.png" alt="Lap local AI photo search screenshot" width="900">
-</p>
-
-> Screenshot sample images come from [Wikimedia Commons](https://commons.wikimedia.org/).
 
 ## Build from Source
 
