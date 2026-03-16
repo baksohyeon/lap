@@ -9,6 +9,7 @@
     ]"
     @click="(event: MouseEvent) => $emit('clicked', event.shiftKey)"
     @dblclick="$emit('dblclicked')"
+    @contextmenu="handleContextMenu"
   >
     <div v-if="file.thumbnail" 
       ref="containerRef"
@@ -84,6 +85,7 @@
       <!-- context menu -->
       <div v-if="!selectMode" class="absolute right-0.5 top-0.5">
         <ContextMenu
+          ref="contextMenuRef"
           :class="[
             !isSelected ? 'invisible group-hover:visible' : ''
           ]"
@@ -176,6 +178,7 @@ const isTransitionDisabled = ref(false);
 let transitionTimeout: NodeJS.Timeout | null = null;
 
 const containerRef = ref<HTMLElement | null>(null);
+const contextMenuRef = ref<InstanceType<typeof ContextMenu> | null>(null);
 const containerWidth = ref(0);
 const containerHeight = ref(0);
 let resizeObserver: ResizeObserver | null = null;
@@ -222,6 +225,16 @@ watch(() => props.file.rotate, () => {
     isTransitionDisabled.value = false;
   }, 500);
 });
+
+function handleContextMenu(event: MouseEvent) {
+  if (props.selectMode) return;
+  event.preventDefault();
+  event.stopPropagation();
+  if (!props.isSelected) {
+    emit('clicked', false);
+  }
+  contextMenuRef.value?.open?.(event.clientX, event.clientY);
+}
 
 
 const layoutStyle = computed(() => {

@@ -42,7 +42,7 @@
           <IconFile class="w-4 h-4" />
           <span class="font-bold mr-auto uppercase text-xs tracking-wide">{{ $t('file_info.general') }}</span>
           <TButton
-            :icon="showBasicInfoPanel ? IconArrowUp : IconArrowDown"
+            :icon="showBasicInfoPanel ? IconArrowDown : IconArrowUp"
             :buttonSize="'small'"
           />
         </div>
@@ -228,7 +228,7 @@
           <IconCameraAperture class="w-4 h-4 " /> 
           <span class="font-bold mr-auto uppercase text-xs tracking-wide">{{ $t('file_info.metadata') }}</span>
           <TButton
-            :icon="showMetadataPanel ? IconArrowUp : IconArrowDown"
+            :icon="showMetadataPanel ? IconArrowDown : IconArrowUp"
             :buttonSize="'small'"
           />
         </div>
@@ -287,7 +287,7 @@
           <IconLocation class="w-4 h-4 " /> 
           <span class="font-bold mr-auto uppercase text-xs tracking-wide">{{ $t('file_info.map') }}</span>
           <TButton
-            :icon="showMapPanel ? IconArrowUp : IconArrowDown"
+            :icon="showMapPanel ? IconArrowDown : IconArrowUp"
             :buttonSize="'small'"
           />
         </div>

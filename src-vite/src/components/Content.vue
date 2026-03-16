@@ -592,7 +592,7 @@ import {
   IconFolderFavorite,
   IconMoveTo,
   IconFiles,
-  IconFolderExpanded,
+  IconFolder,
   IconChecked,
   IconTag,
   IconSmartTag,
@@ -1080,7 +1080,7 @@ const currentTitleIcon = computed(() => {
           case 0:
             switch (libConfig.album.id) {
               case 0: return IconPhotoAll;
-              default: return libConfig.album.selected ? IconPhotoAll : IconFolderExpanded;
+              default: return libConfig.album.selected ? IconPhotoAll : IconFolder;
             }
           case 1:
             switch (libConfig.favorite.folderId) {

@@ -13,23 +13,15 @@
         @click="clickFolder(albumId, child)"
         @dblclick="expandFolder(child)"
       >
-        <!-- icon -->
-        <template v-if="child.path === rootPath">
-          <component :is="child.is_expanded ? IconFolderExpanded : IconFolderCollapsed"
-            class="p-1 w-6 h-6 shrink-0 transition-transform"
-            @click.stop="expandFolder(child)"
-          />
-        </template>
-        <template v-else>
-          <IconRight v-if="!child.children || child.children.length > 0"
-            :class="[
-              'p-1 w-6 h-6 shrink-0 transition-transform', 
-              child.is_expanded ? 'rotate-90' : ''
-            ]"
-            @click.stop="expandFolder(child)"
-          />
-          <span v-else class="w-6 shrink-0"></span>
-        </template>
+        <IconRight
+          :class="[
+            'p-1 w-6 h-6 shrink-0 transition-transform',
+            (!child.children || child.children.length > 0) ? '' : 'opacity-0 pointer-events-none',
+            child.is_expanded ? 'rotate-90' : ''
+          ]"
+          @click.stop="expandFolder(child)"
+        />
+        <IconFolder class="p-1 w-6 h-6 shrink-0"/>
 
         <!-- name -->
         <input v-if="isRenamingFolder && selection.folderPath.value === child.path"
@@ -154,8 +146,7 @@ import {
   IconTrash,
   IconHeartFilled,
   IconCopyTo,
-  IconFolderExpanded,
-  IconFolderCollapsed,
+  IconFolder,
   IconRefresh,
 } from '@/common/icons';
 // Hidden for now: folder favorite support.

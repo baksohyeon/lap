@@ -21,6 +21,7 @@ mod t_dedup;
 mod t_face;
 mod t_image;
 mod t_lens;
+mod t_menu;
 mod t_migration;
 mod t_sqlite;
 mod t_utils;
@@ -69,6 +70,7 @@ fn main() {
         .manage(t_dedup::DedupState::default())
         .setup(|_app| {
             t_config::set_app_identifier(&_app.config().identifier);
+            t_menu::install_app_menu(&_app.handle())?;
 
             // Create the database on startup
             if let Err(e) = t_sqlite::create_db() {
@@ -122,6 +124,9 @@ fn main() {
 
                 app_handle.exit(0);
             }
+        })
+        .on_menu_event(|app, event| {
+            t_menu::handle_menu_event(app, event);
         })
         .invoke_handler(tauri::generate_handler![
             // library

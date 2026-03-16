@@ -152,8 +152,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onBeforeUnmount, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { emit, listen } from '@tauri-apps/api/event';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { getName } from '@tauri-apps/api/app';
 import { config, libConfig } from '@/common/config';
@@ -234,6 +235,8 @@ const isDraggingSplitter = ref(false);
 const appName = ref('');
 const showDebugBadge = import.meta.env.DEV;
 const toolTipRef = ref<InstanceType<typeof ToolTip> | null>(null);
+let unlistenOpenPreferences: (() => void) | null = null;
+let unlistenOpenAbout: (() => void) | null = null;
 const {
   updateAvailable,
   isCheckingUpdate,
@@ -305,6 +308,13 @@ const libraryMenuItems = computed(() => {
 
 
 onMounted(async () => {
+  unlistenOpenPreferences = await listen('app-open-preferences', () => {
+    void clickSettings();
+  });
+  unlistenOpenAbout = await listen('app-open-about', () => {
+    void clickSettings(4);
+  });
+
   appConfig.value = await getAppConfig();
   
   try {
@@ -315,6 +325,13 @@ onMounted(async () => {
   }
 
   void checkForUpdates(false);
+});
+
+onBeforeUnmount(() => {
+  unlistenOpenPreferences?.();
+  unlistenOpenPreferences = null;
+  unlistenOpenAbout?.();
+  unlistenOpenAbout = null;
 });
 
 const doSwitchLibrary = async (libraryId: string) => {
@@ -393,7 +410,12 @@ function handleMouseMove(event: MouseEvent) {
 }
 
 /// click settings icon
-async function clickSettings() {
+async function clickSettings(tabIndex?: number) {
+  if (typeof tabIndex === 'number') {
+    config.settings.tabIndex = tabIndex;
+    await emit('settings-settingsTabIndex-changed', tabIndex);
+  }
+
   // check if the settings window is already open
   const settingsWindow = await WebviewWindow.getByLabel('settings');
   if (settingsWindow) {
