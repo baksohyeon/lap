@@ -59,6 +59,14 @@
                   @click.stop="increasePreviewScale"
                 />
               </div>
+              <div class="absolute top-2 right-2 z-10">
+                <span
+                  v-if="previewFormatLabel"
+                  class="inline-flex items-center rounded-box border border-base-content/20 bg-base-300/80 px-1.5 text-[10px] font-bold uppercase tracking-wide text-base-content/80 backdrop-blur-sm"
+                >
+                  {{ previewFormatLabel }}
+                </span>
+              </div>
               <div class="absolute inset-0">
                 <img
                   v-if="fileInfo?.thumbnail"
@@ -451,6 +459,19 @@ const showMapPanel = computed(() => config.infoPanel.showMap);
 const normalizedRotate = computed(() => {
   const rotate = Number(props.fileInfo?.rotate || 0) % 360;
   return rotate < 0 ? rotate + 360 : rotate;
+});
+const previewFormatLabel = computed(() => {
+  const formatLabel = (props.fileInfo?.format_label || '').trim();
+  if (formatLabel) {
+    return formatLabel.toUpperCase();
+  }
+
+  const name = props.fileInfo?.name || '';
+  const filePath = props.fileInfo?.file_path || '';
+  const extension = getFileExtension(name || filePath).trim();
+  if (!extension) return '';
+  if (Number(props.fileInfo?.file_type || 0) === 3) return 'RAW';
+  return extension.toUpperCase();
 });
 
 function togglePreview() {

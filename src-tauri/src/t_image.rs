@@ -5,9 +5,12 @@
  * date:    2024-08-08
  */
 use arboard::Clipboard;
+use exif::{In, Reader, Tag};
 use image::{DynamicImage, GenericImageView, ImageFormat, ImageReader};
 use rusqlite::Result;
 use serde::{Deserialize, Serialize};
+use std::fs::File;
+use std::io::BufReader;
 use std::io::Cursor;
 use std::path::Path;
 use std::process::Command;
@@ -102,6 +105,180 @@ pub fn get_image_thumbnail(
             Ok(None)
         }
     }
+}
+
+#[derive(Debug)]
+struct EmbeddedJpegCandidate {
+    data: Vec<u8>,
+    max_edge: u32,
+}
+
+fn collect_embedded_jpeg_candidates(file_path: &str) -> Result<Vec<EmbeddedJpegCandidate>, String> {
+    let file = File::open(file_path).map_err(|e| format!("Failed to open RAW image: {}", e))?;
+    let mut reader = BufReader::new(file);
+    let exif = Reader::new()
+        .read_from_container(&mut reader)
+        .map_err(|e| format!("Failed to parse EXIF preview: {}", e))?;
+
+    let buf = exif.buf();
+    let mut candidates: Vec<EmbeddedJpegCandidate> = Vec::new();
+
+    // The parser caps IFD count at 8. Scan all possible IFDs for embedded JPEGs.
+    for ifd_index in 0u16..8u16 {
+        let ifd = In(ifd_index);
+        let offset = exif
+            .get_field(Tag::JPEGInterchangeFormat, ifd)
+            .and_then(|field| field.value.get_uint(0))
+            .map(|value| value as usize);
+        let len = exif
+            .get_field(Tag::JPEGInterchangeFormatLength, ifd)
+            .and_then(|field| field.value.get_uint(0))
+            .map(|value| value as usize);
+
+        let (offset, len) = match (offset, len) {
+            (Some(offset), Some(len)) if len > 4 => (offset, len),
+            _ => continue,
+        };
+
+        let end = offset.saturating_add(len);
+        if end > buf.len() {
+            continue;
+        }
+
+        let candidate = &buf[offset..end];
+        // Basic JPEG signature check to avoid selecting non-JPEG payloads.
+        if !(candidate.starts_with(&[0xFF, 0xD8])) {
+            continue;
+        }
+
+        let data = candidate.to_vec();
+        let max_edge = match image::load_from_memory(&data) {
+            Ok(image) => {
+                let (width, height) = image.dimensions();
+                width.max(height)
+            }
+            Err(_) => continue,
+        };
+
+        if max_edge == 0 {
+            continue;
+        }
+
+        candidates.push(EmbeddedJpegCandidate { data, max_edge });
+    }
+
+    Ok(candidates)
+}
+
+fn select_embedded_jpeg_for_preview(file_path: &str) -> Result<Option<Vec<u8>>, String> {
+    let candidates = collect_embedded_jpeg_candidates(file_path)?;
+    let mut selected: Option<EmbeddedJpegCandidate> = None;
+
+    for candidate in candidates {
+        match &selected {
+            Some(best) if candidate.max_edge <= best.max_edge => {}
+            _ => selected = Some(candidate),
+        }
+    }
+
+    Ok(selected.map(|item| item.data))
+}
+
+fn select_embedded_jpeg_for_thumbnail(
+    file_path: &str,
+    thumbnail_size: u32,
+) -> Result<Option<Vec<u8>>, String> {
+    let candidates = collect_embedded_jpeg_candidates(file_path)?;
+    if candidates.is_empty() {
+        return Ok(None);
+    }
+
+    let mut best_not_smaller: Option<EmbeddedJpegCandidate> = None;
+    let mut best_smaller: Option<EmbeddedJpegCandidate> = None;
+
+    for candidate in candidates {
+        if candidate.max_edge >= thumbnail_size {
+            match &best_not_smaller {
+                Some(best) if candidate.max_edge >= best.max_edge => {}
+                _ => best_not_smaller = Some(candidate),
+            }
+        } else {
+            match &best_smaller {
+                Some(best) if candidate.max_edge <= best.max_edge => {}
+                _ => best_smaller = Some(candidate),
+            }
+        }
+    }
+
+    Ok(best_not_smaller.or(best_smaller).map(|item| item.data))
+}
+
+pub fn get_raw_preview_image(file_path: &str) -> Result<Option<Vec<u8>>, String> {
+    if let Ok(Some(preview)) = select_embedded_jpeg_for_preview(file_path) {
+        return Ok(Some(preview));
+    }
+
+    #[cfg(target_os = "macos")]
+    if let Ok(Some(data)) = get_thumbnail_with_sips(file_path, 4096) {
+        return Ok(Some(data));
+    }
+
+    // Final fallback for formats that can be decoded directly by `image`.
+    if let Ok(Some(data)) = get_image_thumbnail(file_path, 1, 4096) {
+        return Ok(Some(data));
+    }
+
+    Ok(None)
+}
+
+pub fn get_raw_dimensions(file_path: &str) -> Result<(u32, u32), String> {
+    if let Ok((width, height)) = get_image_dimensions(file_path) {
+        if width > 0 && height > 0 {
+            return Ok((width, height));
+        }
+    }
+
+    if let Ok(Some(preview)) = select_embedded_jpeg_for_preview(file_path) {
+        if let Ok(image) = image::load_from_memory(&preview) {
+            return Ok(image.dimensions());
+        }
+    }
+
+    Err("Failed to resolve RAW dimensions".to_string())
+}
+
+pub fn get_raw_thumbnail(
+    file_path: &str,
+    orientation: i32,
+    thumbnail_size: u32,
+) -> Result<Option<Vec<u8>>, String> {
+    if let Ok(Some(preview)) = select_embedded_jpeg_for_thumbnail(file_path, thumbnail_size) {
+        let img = image::load_from_memory(&preview)
+            .map_err(|e| format!("Failed to decode RAW preview image: {}", e))?;
+        let thumbnail = img.thumbnail(u32::MAX, thumbnail_size);
+
+        let adjusted_thumbnail = match orientation {
+            3 => thumbnail.rotate180(),
+            6 => thumbnail.rotate90(),
+            8 => thumbnail.rotate270(),
+            _ => thumbnail,
+        };
+
+        let rgb_image = adjusted_thumbnail.to_rgb8();
+        let mut buf = Vec::new();
+        rgb_image
+            .write_to(&mut Cursor::new(&mut buf), ImageFormat::Jpeg)
+            .map_err(|e| format!("Failed to encode RAW thumbnail as JPEG: {}", e))?;
+        return Ok(Some(buf));
+    }
+
+    #[cfg(target_os = "macos")]
+    if let Ok(Some(data)) = get_thumbnail_with_sips(file_path, thumbnail_size) {
+        return Ok(Some(data));
+    }
+
+    // Fallback for formats that can be decoded directly by `image`.
+    get_image_thumbnail(file_path, orientation, thumbnail_size)
 }
 
 /// Print an image using the default system printer
@@ -391,7 +568,7 @@ fn get_edited_image(params: &EditParams) -> Result<DynamicImage, String> {
 }
 
 #[cfg(target_os = "macos")]
-pub fn get_heic_thumbnail_with_sips(
+pub fn get_thumbnail_with_sips(
     file_path: &str,
     thumbnail_size: u32,
 ) -> Result<Option<Vec<u8>>, String> {
@@ -430,4 +607,12 @@ pub fn get_heic_thumbnail_with_sips(
     let _ = fs::remove_file(temp_file);
 
     Ok(Some(data))
+}
+
+#[cfg(target_os = "macos")]
+pub fn get_heic_thumbnail_with_sips(
+    file_path: &str,
+    thumbnail_size: u32,
+) -> Result<Option<Vec<u8>>, String> {
+    get_thumbnail_with_sips(file_path, thumbnail_size)
 }

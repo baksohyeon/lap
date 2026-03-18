@@ -12,6 +12,7 @@ use pinyin::ToPinyin;
 use reverse_geocoder::ReverseGeocoder;
 use std::collections::HashMap;
 use std::fs;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::{Arc, Mutex};
@@ -331,12 +332,10 @@ pub fn get_external_app_display_name(app_path: &str) -> Result<String, String> {
         return Err("Missing app path".to_string());
     }
 
-    Ok(
-        resolve_external_app_display_name(app_path)
-            .filter(|name| !name.trim().is_empty())
-            .map(|name| normalize_external_app_name(&name))
-            .unwrap_or_else(|| fallback_external_app_name(app_path)),
-    )
+    Ok(resolve_external_app_display_name(app_path)
+        .filter(|name| !name.trim().is_empty())
+        .map(|name| normalize_external_app_name(&name))
+        .unwrap_or_else(|| fallback_external_app_name(app_path)))
 }
 
 /// create a new folder at a given path
@@ -735,7 +734,7 @@ pub fn count_folder_files(path: &str) -> (u64, u64, u64, u64, u64) {
             if let Some(file_ext_type) = get_file_type(entry.path().to_str().unwrap_or("")) {
                 let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
                 match file_ext_type {
-                    1 => {
+                    1 | 3 => {
                         image_file_count += 1;
                         total_image_size += size;
                     }
@@ -766,30 +765,126 @@ pub fn get_file_extension(file_path: &str) -> Option<String> {
         .map(|s| s.to_string())
 }
 
-/// get file type by extension (1: image, 2: video)
+/// get file type by extension (1: image, 2: video, 3: raw image)
 pub fn get_file_type(file_path: &str) -> Option<i64> {
-    let ext = get_file_extension(file_path)?.to_lowercase();
+    let ext = Path::new(file_path)
+        .extension()
+        .and_then(|ext| ext.to_str())?;
+    let contains_ext = |exts: &[&str]| exts.iter().any(|item| item.eq_ignore_ascii_case(ext));
 
-    // Normal images
-    let normal_imgs = t_common::NORMAL_IMGS;
-
-    // Video formats
-    let videos = t_common::VIDEOS;
-
-    if normal_imgs.contains(&ext.as_str()) {
+    if contains_ext(t_common::NORMAL_IMGS) {
         return Some(1);
     }
 
-    // RAW support is temporarily disabled.
-    // if t_common::RAW_IMGS.contains(&ext.as_str()) {
-    //     return Some(3);
-    // }
-
-    if videos.contains(&ext.as_str()) {
+    if contains_ext(t_common::VIDEOS) {
         return Some(2);
     }
 
+    if contains_ext(t_common::RAW_IMGS) {
+        return Some(3);
+    }
+
     None
+}
+
+fn normalize_format_label(label: &str) -> String {
+    match label.to_ascii_uppercase().as_str() {
+        "JPEG" | "JPE" | "JFIF" => "JPG".to_string(),
+        "TIF" => "TIFF".to_string(),
+        "MPG" => "MPEG".to_string(),
+        "M4V" => "MP4".to_string(),
+        other => other.to_string(),
+    }
+}
+
+fn detect_label_from_header(header: &[u8], file_type: i64) -> Option<String> {
+    // JPEG
+    if header.len() >= 3 && header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF {
+        return Some("JPG".to_string());
+    }
+    // PNG
+    if header.starts_with(&[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A]) {
+        return Some("PNG".to_string());
+    }
+    // GIF
+    if header.starts_with(b"GIF87a") || header.starts_with(b"GIF89a") {
+        return Some("GIF".to_string());
+    }
+    // BMP
+    if header.starts_with(b"BM") {
+        return Some("BMP".to_string());
+    }
+    // RIFF family: WEBP / AVI
+    if header.len() >= 12 && &header[0..4] == b"RIFF" {
+        if &header[8..12] == b"WEBP" {
+            return Some("WEBP".to_string());
+        }
+        if &header[8..11] == b"AVI" {
+            return Some("AVI".to_string());
+        }
+    }
+    // TIFF / DNG
+    if header.len() >= 4 {
+        let is_tiff = (&header[0..4] == b"II*\0") || (&header[0..4] == b"MM\0*");
+        if is_tiff {
+            if file_type == 3 {
+                return Some("RAW".to_string());
+            }
+            return Some("TIFF".to_string());
+        }
+    }
+    // Matroska / WebM (EBML)
+    if header.starts_with(&[0x1A, 0x45, 0xDF, 0xA3]) {
+        return Some("MKV".to_string());
+    }
+    // FLV
+    if header.starts_with(b"FLV") {
+        return Some("FLV".to_string());
+    }
+    // ASF/WMV
+    if header.starts_with(&[
+        0x30, 0x26, 0xB2, 0x75, 0x8E, 0x66, 0xCF, 0x11,
+        0xA6, 0xD9, 0x00, 0xAA, 0x00, 0x62, 0xCE, 0x6C,
+    ]) {
+        return Some("ASF".to_string());
+    }
+    // ISO BMFF family (MP4/MOV/HEIF/AVIF/3GP...)
+    if header.len() >= 12 && &header[4..8] == b"ftyp" {
+        let brand = String::from_utf8_lossy(&header[8..12]).to_ascii_lowercase();
+        if brand.starts_with("3gp") {
+            return Some("3GP".to_string());
+        }
+        if brand == "qt  " || brand == "qt" {
+            return Some("MOV".to_string());
+        }
+        if ["heic", "heix", "hevc", "hevx", "mif1", "msf1", "heif"].contains(&brand.as_str()) {
+            return Some("HEIC".to_string());
+        }
+        if ["avif", "avis"].contains(&brand.as_str()) {
+            return Some("AVIF".to_string());
+        }
+        return Some("MP4".to_string());
+    }
+
+    None
+}
+
+pub fn detect_file_format_label(file_path: &str, file_type: i64) -> Option<String> {
+    if file_type == 3 {
+        return Some("RAW".to_string());
+    }
+
+    let mut file = fs::File::open(file_path).ok()?;
+    let mut header = [0u8; 512];
+    let n = file.read(&mut header).ok()?;
+    let header = &header[..n];
+
+    if let Some(label) = detect_label_from_header(header, file_type) {
+        return Some(normalize_format_label(&label));
+    }
+
+    let ext = get_file_extension(file_path)?;
+    Some(normalize_format_label(&ext))
 }
 
 /// Get the name from a folder or file path
@@ -938,7 +1033,10 @@ pub async fn index_album_worker(
     // This avoids breaking normal re-scan behavior after a completed run.
     let previous_indexed = album.indexed.unwrap_or(0);
     let previous_total = album.total.unwrap_or(0);
-    let resume_from = if previous_total == total_files && previous_indexed > 0 && previous_indexed < total_files {
+    let resume_from = if previous_total == total_files
+        && previous_indexed > 0
+        && previous_indexed < total_files
+    {
         previous_indexed
     } else {
         0
@@ -1013,12 +1111,16 @@ pub async fn index_album_worker(
 
                                 // Generate embedding
                                 let ai_state: State<crate::t_ai::AiState> = app_handle.state();
-                                let _ = crate::t_sqlite::AFile::generate_embedding(&ai_state, file_id);
+                                let _ =
+                                    crate::t_sqlite::AFile::generate_embedding(&ai_state, file_id);
 
                                 // Remove from map to mark as exists
                                 all_files_map.remove(&path_str);
                             } else {
-                                eprintln!("Indexed file has no id, skipping follow-up tasks: {}", path_str);
+                                eprintln!(
+                                    "Indexed file has no id, skipping follow-up tasks: {}",
+                                    path_str
+                                );
                             }
                         }
                     } else {

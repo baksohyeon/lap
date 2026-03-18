@@ -169,7 +169,7 @@ import { ref, shallowRef, triggerRef, watch, onMounted, onBeforeUnmount, compute
 import { useUIStore } from '@/stores/uiStore';
 import { config, libConfig } from '@/common/config';
 import { getAssetSrc } from '@/common/utils';
-import { getFacesForFile } from '@/common/api';
+import { getFacesForFile, getFileImage } from '@/common/api';
 import { RawFace, Face } from '@/common/types';
 
 import { IconError } from '@/common/icons';
@@ -311,10 +311,46 @@ const activeImageEl = ref<HTMLImageElement | null>(null);
 const currentLoadingId = ref(0);
 const preloadCache = new Map<string, Promise<{ src: string; naturalWidth: number; naturalHeight: number }>>();
 const warmedNextSrc = ref('');
+const rawBlobUrlMap = new Map<string, string>();
+
+const RAW_EXTENSIONS = new Set([
+  'cr2', 'cr3', 'nef', 'nrw', 'arw', 'srf', 'sr2', 'raf', 'rw2', 'orf', 'pef', 'dng',
+]);
 
 let resizeObserver: ResizeObserver | null = null;
 let positionObserver: number | null = null;
 const suppressViewportEmit = ref(false);
+
+function isRawImagePath(filePath?: string): boolean {
+  if (!filePath) return false;
+  const extension = filePath.split('.').pop()?.toLowerCase() || '';
+  return RAW_EXTENSIONS.has(extension);
+}
+
+function parseBase64ImagePayload(input: string): { mime: string; base64: string } | null {
+  if (!input) return null;
+  if (input.startsWith('data:')) {
+    const marker = ';base64,';
+    const splitIndex = input.indexOf(marker);
+    if (splitIndex <= 5) return null;
+    const mime = input.slice(5, splitIndex);
+    const base64 = input.slice(splitIndex + marker.length);
+    if (!base64) return null;
+    return { mime: mime || 'image/jpeg', base64 };
+  }
+
+  return { mime: 'image/jpeg', base64: input };
+}
+
+function createObjectUrlFromBase64(base64: string, mime: string): string {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  const blob = new Blob([bytes], { type: mime || 'image/jpeg' });
+  return URL.createObjectURL(blob);
+}
 
 // navigator view mode
 const navContainerSize = computed(() => {
@@ -385,20 +421,6 @@ function loadImageResource(filePath?: string) {
   const loadPromise = new Promise<{ src: string; naturalWidth: number; naturalHeight: number }>((resolve, reject) => {
     let src = '';
 
-    try {
-      src = getAssetSrc(filePath);
-    } catch (error) {
-      preloadCache.delete(filePath);
-      reject(error);
-      return;
-    }
-
-    if (!src) {
-      preloadCache.delete(filePath);
-      reject(new Error('Failed to resolve asset source'));
-      return;
-    }
-
     const img = new Image();
 
     img.onload = async () => {
@@ -421,6 +443,52 @@ function loadImageResource(filePath?: string) {
       preloadCache.delete(filePath);
       reject(new Error(`Error loading image: ${filePath}`));
     };
+
+    if (isRawImagePath(filePath)) {
+      getFileImage(filePath)
+        .then((result) => {
+          if (!result) {
+            preloadCache.delete(filePath);
+            reject(new Error(`Failed to get RAW preview image: ${filePath}`));
+            return;
+          }
+          const payload = parseBase64ImagePayload(result);
+          if (!payload) {
+            preloadCache.delete(filePath);
+            reject(new Error(`Invalid RAW preview payload: ${filePath}`));
+            return;
+          }
+
+          if (rawBlobUrlMap.has(filePath)) {
+            const oldUrl = rawBlobUrlMap.get(filePath);
+            if (oldUrl) {
+              URL.revokeObjectURL(oldUrl);
+            }
+          }
+          src = createObjectUrlFromBase64(payload.base64, payload.mime);
+          rawBlobUrlMap.set(filePath, src);
+          img.src = src;
+        })
+        .catch((error) => {
+          preloadCache.delete(filePath);
+          reject(error);
+        });
+      return;
+    }
+
+    try {
+      src = getAssetSrc(filePath);
+    } catch (error) {
+      preloadCache.delete(filePath);
+      reject(error);
+      return;
+    }
+
+    if (!src) {
+      preloadCache.delete(filePath);
+      reject(new Error('Failed to resolve asset source'));
+      return;
+    }
 
     img.src = src;
   });
@@ -740,6 +808,8 @@ onBeforeUnmount(() => {
   if (loadingTimeout) { // Clear timeout on unmount
     clearTimeout(loadingTimeout);
   }
+  rawBlobUrlMap.forEach((url) => URL.revokeObjectURL(url));
+  rawBlobUrlMap.clear();
 });
 
 const updatePosition = () => {

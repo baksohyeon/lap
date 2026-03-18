@@ -524,10 +524,17 @@ pub fn add_file_to_db(folder_id: i64, file_path: &str) -> Result<Option<AFile>, 
 /// get a file's image
 #[tauri::command]
 pub async fn get_file_image(file_path: String) -> Result<String, String> {
-    match tokio::fs::read(file_path).await {
-        Ok(image_data) => Ok(general_purpose::STANDARD.encode(image_data)),
-        Err(e) => Err(format!("Failed to read the image: {}", e)),
-    }
+    let file_type = t_utils::get_file_type(&file_path).unwrap_or(0);
+    let image_data = if file_type == 3 {
+        t_image::get_raw_preview_image(&file_path)?
+            .ok_or_else(|| format!("Failed to extract embedded RAW preview: {}", file_path))?
+    } else {
+        tokio::fs::read(&file_path)
+            .await
+            .map_err(|e| format!("Failed to read the image: {}", e))?
+    };
+
+    Ok(general_purpose::STANDARD.encode(image_data))
 }
 
 /// check if file exists

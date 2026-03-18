@@ -85,7 +85,7 @@ const uiStore = useUIStore()
 const mapTheme = [
   {
     name: 'standard',
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: 'OpenStreetMap', // https://osmfoundation.org/wiki/Licence/Attribution_Guidelines
   },
   {
@@ -99,6 +99,7 @@ const mapEl = ref(null)
 let marker = null
 let map = null
 let layer = null
+let tileErrorFallbackTriggered = false
 let zoom = ref(props.zoom)
 let resizeObserver = null
 const showAppleMapsButton = computed(() => isMac && validLatLon(props.lat, props.lon))
@@ -207,7 +208,18 @@ function updateTheme() {
       map.removeLayer(layer)
       layer = null
     }
+    tileErrorFallbackTriggered = false
     layer = L.tileLayer(theme.url, { attribution: theme.attribution }).addTo(map)
+    layer.on('tileerror', () => {
+      if (tileErrorFallbackTriggered) return
+      tileErrorFallbackTriggered = true
+
+      // If satellite tiles fail (TLS/network/provider), fall back to standard tiles.
+      if (Number(config.infoPanel.mapTheme) !== 0) {
+        config.infoPanel.mapTheme = 0
+        updateTheme()
+      }
+    })
   }
 }
 

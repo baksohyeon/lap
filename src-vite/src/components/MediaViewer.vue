@@ -286,7 +286,7 @@
         <IconRight class="w-8 h-8" />
       </button>
 
-      <Image v-if="file?.file_type === 1"
+      <Image v-if="file?.file_type === 1 || file?.file_type === 3"
         ref="mediaRef"
         :filePath="file?.file_path" 
         :fileId="file?.id"

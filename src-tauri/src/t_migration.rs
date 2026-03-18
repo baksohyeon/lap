@@ -48,7 +48,27 @@ fn get_migrations() -> Vec<Migration> {
                 CREATE INDEX IF NOT EXISTS idx_dup_items_file ON duplicate_group_items(file_id);
             ",
         },
+        Migration {
+            version: 2,
+            description: "Add afiles.format_label column",
+            sql: "",
+        },
     ]
+}
+
+fn table_has_column(conn: &Connection, table: &str, column: &str) -> Result<bool, String> {
+    let pragma = format!("PRAGMA table_info({})", table);
+    let mut stmt = conn.prepare(&pragma).map_err(|e| e.to_string())?;
+    let mut rows = stmt.query([]).map_err(|e| e.to_string())?;
+
+    while let Some(row) = rows.next().map_err(|e| e.to_string())? {
+        let name: String = row.get(1).map_err(|e| e.to_string())?;
+        if name.eq_ignore_ascii_case(column) {
+            return Ok(true);
+        }
+    }
+
+    Ok(false)
 }
 
 pub fn check_and_migrate(conn: &Connection) -> Result<(), String> {
@@ -69,8 +89,15 @@ pub fn check_and_migrate(conn: &Connection) -> Result<(), String> {
             );
 
             // Execute the migration logic
-            conn.execute_batch(migration.sql)
-                .map_err(|e| format!("Migration {} failed: {}", migration.version, e))?;
+            if migration.version == 2 {
+                if !table_has_column(conn, "afiles", "format_label")? {
+                    conn.execute("ALTER TABLE afiles ADD COLUMN format_label TEXT", [])
+                        .map_err(|e| format!("Migration {} failed: {}", migration.version, e))?;
+                }
+            } else if !migration.sql.trim().is_empty() {
+                conn.execute_batch(migration.sql)
+                    .map_err(|e| format!("Migration {} failed: {}", migration.version, e))?;
+            }
 
             new_version = migration.version;
         }

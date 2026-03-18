@@ -502,6 +502,7 @@ pub struct AFile {
     pub name_pinyin: Option<String>, // file name pinyin(for sort)
     pub size: i64,                   // file size
     pub file_type: Option<i64>,      // file type (0: all, 1: image, 2: video, 3: audio, 4: other)
+    pub format_label: Option<String>, // normalized file format label (from file content)
     pub created_at: Option<i64>,     // file create timestamp
     pub modified_at: Option<i64>,    // file modified timestamp
     pub taken_date: Option<i64>,     // taken date timestamp (e_date_time || modified_at)
@@ -605,8 +606,9 @@ impl AFile {
 
         // get dimensions based on file type
         let (width, height) = match file_type {
-            1 | 3 => t_image::get_image_dimensions(file_path)?,
+            1 => t_image::get_image_dimensions(file_path)?,
             2 => t_video::get_video_dimensions(file_path)?,
+            3 => t_image::get_raw_dimensions(file_path)?,
             _ => (0, 0),
         };
 
@@ -615,6 +617,7 @@ impl AFile {
             2 => t_video::get_video_duration(file_path)? as i64,
             _ => 0,
         };
+        let format_label = t_utils::detect_file_format_label(file_path, file_type);
 
         // Initialize mutable metadata fields
         let mut taken_date: Option<i64> = None;
@@ -759,6 +762,7 @@ impl AFile {
             name_pinyin: Some(t_utils::convert_to_pinyin(file_info.file_name.as_str())), // convert to pinyin
             size: file_info.file_size,
             file_type: Some(file_type),
+            format_label,
             created_at: file_info.created,
             modified_at: file_info.modified,
 
@@ -989,14 +993,14 @@ impl AFile {
         let result = conn.execute(
             "INSERT INTO afiles (
                 folder_id, 
-                name, name_pinyin, size, file_type, created_at, modified_at, 
+                name, name_pinyin, size, file_type, format_label, created_at, modified_at, 
                 taken_date,
                 width, height, duration,
                 is_favorite, rating, rotate, comments, has_tags,
                 e_make, e_model, e_date_time, e_software, e_artist, e_copyright, e_description, e_lens_make, e_lens_model, e_exposure_bias, e_exposure_time, e_f_number, e_focal_length, e_iso_speed, e_flash, e_orientation,
                 gps_latitude, gps_longitude, gps_altitude, geo_name, geo_admin1, geo_admin2, geo_cc
             ) 
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32, ?33, ?34, ?35, ?36, ?37, ?38, ?39)",
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32, ?33, ?34, ?35, ?36, ?37, ?38, ?39, ?40)",
             params![
                 self.folder_id,
 
@@ -1004,6 +1008,7 @@ impl AFile {
                 self.name_pinyin,
                 self.size,
                 self.file_type,
+                self.format_label,
                 self.created_at,
                 self.modified_at,
 
@@ -1053,18 +1058,19 @@ impl AFile {
         let conn = open_conn()?;
         let result = conn.execute(
             "UPDATE afiles SET
-                name = ?1, name_pinyin = ?2, size = ?3, file_type = ?4, created_at = ?5, modified_at = ?6,
-                taken_date = ?7,
-                width = ?8, height = ?9, duration = ?10,
-                rating = ?11,
-                e_make = ?12, e_model = ?13, e_date_time = ?14, e_software = ?15, e_artist = ?16, e_copyright = ?17, e_description = ?18, e_lens_make = ?19, e_lens_model = ?20, e_exposure_bias = ?21, e_exposure_time = ?22, e_f_number = ?23, e_focal_length = ?24, e_iso_speed = ?25, e_flash = ?26, e_orientation = ?27,
-                gps_latitude = ?28, gps_longitude = ?29, gps_altitude = ?30, geo_name = ?31, geo_admin1 = ?32, geo_admin2 = ?33, geo_cc = ?34
-            WHERE id = ?35",
+                name = ?1, name_pinyin = ?2, size = ?3, file_type = ?4, format_label = ?5, created_at = ?6, modified_at = ?7,
+                taken_date = ?8,
+                width = ?9, height = ?10, duration = ?11,
+                rating = ?12,
+                e_make = ?13, e_model = ?14, e_date_time = ?15, e_software = ?16, e_artist = ?17, e_copyright = ?18, e_description = ?19, e_lens_make = ?20, e_lens_model = ?21, e_exposure_bias = ?22, e_exposure_time = ?23, e_f_number = ?24, e_focal_length = ?25, e_iso_speed = ?26, e_flash = ?27, e_orientation = ?28,
+                gps_latitude = ?29, gps_longitude = ?30, gps_altitude = ?31, geo_name = ?32, geo_admin1 = ?33, geo_admin2 = ?34, geo_cc = ?35
+            WHERE id = ?36",
             params![
                 file.name,
                 file.name_pinyin,
                 file.size,
                 file.file_type,
+                file.format_label,
                 file.created_at,
                 file.modified_at,
 
@@ -1162,7 +1168,7 @@ impl AFile {
     fn build_base_query() -> String {
         String::from(
             "SELECT a.id, a.folder_id, 
-                a.name, a.name_pinyin, a.size, a.file_type, a.created_at, a.modified_at, 
+                a.name, a.name_pinyin, a.size, a.file_type, a.format_label, a.created_at, a.modified_at, 
                 a.taken_date,
                 a.width, a.height, a.duration,
                 a.is_favorite, a.rating, a.rotate, a.comments, a.has_tags,
@@ -1189,55 +1195,56 @@ impl AFile {
             name_pinyin: row.get(3)?,
             size: row.get(4)?,
             file_type: row.get(5)?,
-            created_at: row.get(6)?,
-            modified_at: row.get(7)?,
+            format_label: row.get(6)?,
+            created_at: row.get(7)?,
+            modified_at: row.get(8)?,
 
-            taken_date: row.get(8)?,
+            taken_date: row.get(9)?,
 
-            width: row.get(9)?,
-            height: row.get(10)?,
-            duration: row.get(11)?,
+            width: row.get(10)?,
+            height: row.get(11)?,
+            duration: row.get(12)?,
 
-            is_favorite: row.get(12)?,
-            rating: row.get(13)?,
-            rotate: row.get(14)?,
-            comments: row.get(15)?,
-            has_tags: row.get(16)?,
+            is_favorite: row.get(13)?,
+            rating: row.get(14)?,
+            rotate: row.get(15)?,
+            comments: row.get(16)?,
+            has_tags: row.get(17)?,
 
-            e_make: row.get(17)?,
-            e_model: row.get(18)?,
-            e_date_time: row.get(19)?,
-            e_software: row.get(20)?,
-            e_artist: row.get(21)?,
-            e_copyright: row.get(22)?,
-            e_description: row.get(23)?,
-            e_lens_make: row.get(24)?,
-            e_lens_model: row.get(25)?,
-            e_exposure_bias: row.get(26)?,
-            e_exposure_time: row.get(27)?,
-            e_f_number: row.get(28)?,
-            e_focal_length: row.get(29)?,
-            e_iso_speed: row.get(30)?,
-            e_flash: row.get(31)?,
-            e_orientation: row.get(32)?,
+            e_make: row.get(18)?,
+            e_model: row.get(19)?,
+            e_date_time: row.get(20)?,
+            e_software: row.get(21)?,
+            e_artist: row.get(22)?,
+            e_copyright: row.get(23)?,
+            e_description: row.get(24)?,
+            e_lens_make: row.get(25)?,
+            e_lens_model: row.get(26)?,
+            e_exposure_bias: row.get(27)?,
+            e_exposure_time: row.get(28)?,
+            e_f_number: row.get(29)?,
+            e_focal_length: row.get(30)?,
+            e_iso_speed: row.get(31)?,
+            e_flash: row.get(32)?,
+            e_orientation: row.get(33)?,
 
-            gps_latitude: row.get(33)?,
-            gps_longitude: row.get(34)?,
-            gps_altitude: row.get(35)?,
-            geo_name: row.get(36)?,
-            geo_admin1: row.get(37)?,
-            geo_admin2: row.get(38)?,
-            geo_cc: row.get(39)?,
+            gps_latitude: row.get(34)?,
+            gps_longitude: row.get(35)?,
+            gps_altitude: row.get(36)?,
+            geo_name: row.get(37)?,
+            geo_admin1: row.get(38)?,
+            geo_admin2: row.get(39)?,
+            geo_cc: row.get(40)?,
 
             file_path: Some(t_utils::get_file_path(
-                row.get::<_, String>(40)?.as_str(),
+                row.get::<_, String>(41)?.as_str(),
                 row.get::<_, String>(2)?.as_str(),
             )),
-            album_id: row.get(41)?,
-            album_name: row.get(42)?,
-            has_thumbnail: row.get::<_, Option<i64>>(43)?.map(|v| v == 1),
-            has_embedding: row.get::<_, Option<i64>>(44)?.map(|v| v == 1),
-            has_faces: row.get::<_, Option<i32>>(45)?,
+            album_id: row.get(42)?,
+            album_name: row.get(43)?,
+            has_thumbnail: row.get::<_, Option<i64>>(44)?.map(|v| v == 1),
+            has_embedding: row.get::<_, Option<i64>>(45)?.map(|v| v == 1),
+            has_faces: row.get::<_, Option<i32>>(46)?,
         })
     }
 
@@ -1272,7 +1279,7 @@ impl AFile {
 
         let mut files = Vec::new();
         for file in rows {
-            files.push(file.unwrap());
+            files.push(file.map_err(|e| e.to_string())?);
         }
 
         Ok(files)
@@ -2056,6 +2063,14 @@ impl AThumb {
                     Err(_) => (None, 1),
                 }
             }
+            3 => {
+                // raw image
+                match t_image::get_raw_thumbnail(file_path, orientation, thumbnail_size) {
+                    Ok(Some(data)) => (Some(data), 0),
+                    Ok(None) => (None, 1),
+                    Err(_) => (None, 1),
+                }
+            }
             _ => (None, 1),
         };
 
@@ -2123,7 +2138,11 @@ impl AThumb {
         } else {
             // Check if the thumbnail exists
             if let Ok(Some(thumbnail)) = Self::fetch(file_id) {
-                return Ok(Some(thumbnail));
+                if thumbnail.error_code != 0 || thumbnail.thumb_data.is_none() {
+                    let _ = Self::delete(file_id);
+                } else {
+                    return Ok(Some(thumbnail));
+                }
             }
         }
 
@@ -3196,9 +3215,6 @@ pub fn create_db() -> Result<(), String> {
 fn create_db_internal() -> Result<(), String> {
     let conn = open_conn()?;
 
-    // Run migrations
-    crate::t_migration::check_and_migrate(&conn)?;
-
     // albums table
     conn.execute(
         "CREATE TABLE IF NOT EXISTS albums (
@@ -3272,6 +3288,7 @@ fn create_db_internal() -> Result<(), String> {
             name_pinyin TEXT,
             size INTEGER NOT NULL,
             file_type INTEGER,
+            format_label TEXT,
             created_at INTEGER,
             modified_at INTEGER,
             taken_date INTEGER,
@@ -3581,6 +3598,9 @@ fn create_db_internal() -> Result<(), String> {
         [],
     )
     .map_err(|e| e.to_string())?;
+
+    // Run schema migrations after base tables are ensured.
+    crate::t_migration::check_and_migrate(&conn)?;
 
     Ok(())
 }

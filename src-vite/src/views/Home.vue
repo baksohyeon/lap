@@ -71,7 +71,7 @@
             <div 
               class="mb-2 h-10 flex items-center justify-between whitespace-nowrap shrink-0"
               :class="config.settings.scale < 1 ? 'p-3' : 'p-1'"
-              data-tauri-drag-regio
+              data-tauri-drag-region
             >
               
               <!-- Library dropdown selector -->
