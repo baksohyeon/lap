@@ -1472,8 +1472,13 @@ impl AFile {
         }
 
         if params.search_file_type > 0 {
-            conditions.push("a.file_type = ?");
-            sql_params.push(Box::new(params.search_file_type));
+            if params.search_file_type == 1 {
+                // "Image" filter should include both normal images and RAW files.
+                conditions.push("(a.file_type = 1 OR a.file_type = 3)");
+            } else {
+                conditions.push("a.file_type = ?");
+                sql_params.push(Box::new(params.search_file_type));
+            }
         }
 
         if !params.search_all_subfolders.is_empty() {
@@ -2195,8 +2200,12 @@ impl AThumb {
         params.push(&folder_id);
 
         if file_type > 0 {
-            conditions.push("a.file_type = ?");
-            params.push(&file_type);
+            if file_type == 1 {
+                conditions.push("(a.file_type = 1 OR a.file_type = 3)");
+            } else {
+                conditions.push("a.file_type = ?");
+                params.push(&file_type);
+            }
         }
 
         let mut query =

@@ -6,7 +6,6 @@ export const useUIStore = defineStore('ui', {
     activePane: 'content',
     inputStack: [],
     fileVersions: {},
-    isFullScreen: false,
     mapActive: false,
     activeAdjustments: {
       filePath: null,

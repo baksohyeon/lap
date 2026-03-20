@@ -180,19 +180,20 @@
         />
         <IconSeparator v-if="mode !== 2" class="t-icon-size-sm text-base-content/30" />
         <TButton
+          v-if="mode === 2"
           :icon="!isFullScreen ? IconFullScreen : IconRestoreScreen"
           :tooltip="!isFullScreen ? $t('image_viewer.toolbar.fullscreen') : $t('image_viewer.toolbar.exit_fullscreen')"
           :disabled="!canInteract"
           @click="$emit('toggle-full-screen')"
         />
-        <TButton v-if="mode !== 2"
+        <TButton v-if="mode !== 2 && !isFullScreen"
           :icon="config.mediaViewer.isPinned ? IconPin : IconUnPin"
           :disabled="fileIndex < 0 || !canInteract"
           :tooltip="!config.mediaViewer.isPinned ? $t('image_viewer.toolbar.pin') : $t('image_viewer.toolbar.unpin')"
           @click="config.mediaViewer.isPinned = !config.mediaViewer.isPinned"
         />
         <TButton
-          v-if="mode === 0"
+          v-if="mode === 0 && config.mediaViewer.isPinned"
           :icon="IconClose"
           :tooltip="$t('image_viewer.toolbar.close')"
           :disabled="!canInteract"
@@ -222,7 +223,7 @@
     <template v-if="!toolbarOnly">
     <!-- Close Button (Top Right) -->
     <button 
-      v-if="mode === 0 && !config.mediaViewer.isPinned"
+      v-if="mode === 0 && !config.mediaViewer.isPinned && !isFullScreen"
       class="absolute right-2 top-2 z-90 p-2 rounded-full text-base-content/70 hover:text-base-content hover:bg-base-100/70 cursor-pointer"
       @click.stop="$emit('close')"
       @dblclick.stop
@@ -461,6 +462,10 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  forceToolbarVisible: {
+    type: Boolean,
+    default: false
+  },
 });
 
 const emit = defineEmits([
@@ -615,7 +620,7 @@ const quickViewStatusBadges = computed(() => {
 });
 
 const showStatusBadges = computed(() => {
-  return props.mode === 0 || props.mode === 1 || props.mode === 2;
+  return !props.isFullScreen && (props.mode === 0 || props.mode === 1 || props.mode === 2);
 });
 let resizeObserver: ResizeObserver | null = null;
 const updateNavButtonsTop = () => {
@@ -709,8 +714,13 @@ function handleContextMenu(e: MouseEvent) {
 
 const computedToolbarClass = computed(() => {
   const commonClasses = 'absolute z-80 h-10 flex flex-row items-center justify-center select-none';
-  
-  const isPinned = props.isFullScreen ? false : (props.mode === 2 ? true : config.mediaViewer.isPinned);
+
+  if (props.isFullScreen && props.mode === 2) {
+    const floatingClasses = 'left-1/2 top-4 -translate-x-1/2 px-2 rounded-box bg-base-100/30 hover:bg-base-100/70 transition-[opacity,transform] duration-300 ease-in-out';
+    return `${commonClasses} ${floatingClasses} ${(props.forceToolbarVisible || isHoverTop.value || hasOpenMenu.value) ? 'opacity-100' : 'opacity-0'}`;
+  }
+
+  const isPinned = props.mode === 2 ? true : config.mediaViewer.isPinned;
 
   if (isPinned) {
     // Fixed Top Bar

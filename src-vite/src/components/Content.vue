@@ -16,7 +16,7 @@
     </transition>
 
     <!-- title bar -->
-    <div v-if="!uiStore.isFullScreen"
+    <div
       class="absolute top-0 left-0 right-0 px-2 h-12 flex flex-row flex-wrap items-center justify-between bg-base-300/80 backdrop-blur-md z-30"  
       data-tauri-drag-region
     >
@@ -271,9 +271,7 @@
         <!-- Quick View Overlay -->
         <div v-if="showQuickView && fileList[selectedItemIndex]" 
           class="absolute inset-0 z-60 flex items-center justify-center bg-base-200/80 backdrop-blur-md overflow-hidden"
-          :class="[
-            !uiStore.isFullScreen ? (config.settings.showStatusBar ? 'mt-12 mb-8': 'mt-12 mb-1') : ''
-          ]"
+          :class="[ config.settings.showStatusBar ? 'mt-12 mb-8': 'mt-12 mb-1' ]"
         >
           <div
             class="relative w-full h-full flex items-center justify-center"
@@ -315,7 +313,7 @@
             <MediaViewer
               ref="quickViewMediaRef"
               :mode="0"
-              :isFullScreen="uiStore.isFullScreen"
+              :isFullScreen="false"
               :file="fileList[selectedItemIndex]"
               :nextFilePath="getNextImagePath(selectedItemIndex)"
               :hasPrevious="selectedItemIndex > 0"
@@ -334,8 +332,7 @@
               @toggle-slide-show="toggleSlideShow"
               @scale="onScale"
               @item-action="handleItemAction"
-              @toggle-full-screen="uiStore.isFullScreen = !uiStore.isFullScreen"
-              @close="showQuickView = false; uiStore.isFullScreen = false; stopSlideShow()"
+              @close="closeQuickPreview()"
               @slideshow-next="handleSlideshowNext"
             />
           </div>
@@ -343,7 +340,7 @@
       </div>
 
       <!-- info panel splitter -->
-      <div v-if="(config.rightPanel.show || selectMode) && !uiStore.isFullScreen"
+      <div v-if="config.rightPanel.show || selectMode"
         class="w-1 shrink-0 transition-colors mt-12"
         :class="{
           'mb-8': config.settings.showStatusBar,
@@ -363,7 +360,7 @@
         leave-from-class="opacity-100"
         leave-to-class="!w-0 opacity-0"
       >
-        <div v-if="(config.rightPanel.show || selectMode) && !uiStore.isFullScreen"
+        <div v-if="config.rightPanel.show || selectMode"
           :class="[ 'pt-12 pr-1', config.settings.showStatusBar ? 'pb-8' : 'pb-1' ]" 
           :style="{ width: activeRightPanelWidth + 'px' }">
           <DedupPane
@@ -772,9 +769,26 @@ function handleQuickViewMouseLeave() {
   quickViewHoverRight.value = false;
 }
 
+function getActivePreviewMode(): 'quick-view' | 'filmstrip' | 'none' {
+  if (showQuickView.value) return 'quick-view';
+  if (config.settings.grid.showFilmStrip) return 'filmstrip';
+  return 'none';
+}
+
+function getActivePreviewMediaRef() {
+  if (showQuickView.value) return quickViewMediaRef.value;
+  if (config.settings.grid.showFilmStrip) return filmStripMediaRef.value;
+  return null;
+}
+
 // film strip view
 const filmStripMediaRef = ref<any>(null);
 const filmStripZoomFit = ref(true);
+
+function closeQuickPreview() {
+  showQuickView.value = false;
+  stopSlideShow();
+}
 
 // toolbar state for MediaViewer
 const imageScale = ref(1);
@@ -1491,13 +1505,8 @@ function handleLocalKeyDown(event: KeyboardEvent) {
   }
 
   if (event.key === 'Escape') {
-    if (uiStore.isFullScreen) {
-      uiStore.isFullScreen = false;
-      event.preventDefault();
-      return;
-    } else if (showQuickView.value) {
-      showQuickView.value = false;
-      stopSlideShow();
+    if (showQuickView.value) {
+      closeQuickPreview();
       event.preventDefault();
       return;
     } else if (selectMode.value) {
@@ -1541,26 +1550,26 @@ function handleLocalKeyDown(event: KeyboardEvent) {
       return;
     }
 
-    if (showQuickView.value && event.key === '=') {
+    if (getActivePreviewMode() !== 'none' && event.key === '=') {
       event.preventDefault();
-      quickViewMediaRef.value?.zoomIn?.();
+      getActivePreviewMediaRef()?.zoomIn?.();
       return;
     }
 
-    if (showQuickView.value && event.key === '-') {
+    if (getActivePreviewMode() !== 'none' && event.key === '-') {
       event.preventDefault();
-      quickViewMediaRef.value?.zoomOut?.();
+      getActivePreviewMediaRef()?.zoomOut?.();
       return;
     }
 
-    if (!showQuickView.value && event.key === '=') {
+    if (getActivePreviewMode() === 'none' && event.key === '=') {
       if (!isContentInteractionActive()) return;
       event.preventDefault();
       config.settings.grid.size = Math.min(360, Number(config.settings.grid.size || 160) + 10);
       return;
     }
 
-    if (!showQuickView.value && event.key === '-') {
+    if (getActivePreviewMode() === 'none' && event.key === '-') {
       if (!isContentInteractionActive()) return;
       event.preventDefault();
       config.settings.grid.size = Math.max(120, Number(config.settings.grid.size || 160) - 10);
@@ -1613,13 +1622,13 @@ function handleLocalKeyDown(event: KeyboardEvent) {
     }
   } 
   else if (event.key === 'Space' || event.key === ' ') {
-    if (showQuickView.value) {
+    if (getActivePreviewMode() === 'quick-view') {
       if (fileList.value[selectedItemIndex.value]?.file_type === 2) {
-        quickViewMediaRef.value?.togglePlay?.();
+        getActivePreviewMediaRef()?.togglePlay?.();
       } else {
         quickViewZoomFit.value = !quickViewZoomFit.value;
       }
-    } else if (config.settings.grid.showFilmStrip) {
+    } else if (getActivePreviewMode() === 'filmstrip') {
       filmStripZoomFit.value = !filmStripZoomFit.value;
     } else if (!config.settings.grid.showFilmStrip) {
       showQuickView.value = true;

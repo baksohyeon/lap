@@ -5,6 +5,8 @@
       'relative w-screen h-screen flex flex-col overflow-hidden bg-base-300 text-base-content/70',
       isFullScreen ? 'fixed top-0 left-0 z-50' : '',
     ]"
+    @mousemove="handleRootMouseMove"
+    @mouseleave="handleRootMouseLeave"
   >
 
     <div
@@ -44,6 +46,7 @@
           @scale="clickScale"
           @update:isZoomFit="(val) => handleZoomFitUpdate(val, 'left')"
           @media-dblclick="toggleZoomFit()"
+          @toggle-full-screen="toggleNativeFullScreen"
           @close="closeWindow"
           @slideshow-next="handleSlideshowNext"
         />
@@ -82,12 +85,14 @@
             :isZoomFit="activePane === 'left' ? isZoomFit : rightIsZoomFit"
             :isSplit="isSplit"
             :isSyncViewport="isSyncViewport"
+            :forceToolbarVisible="isFullScreen && splitToolbarVisible"
             @prev="clickPrev(activePane)"
             @next="clickNext(activePane)"
             @toggle-slide-show="clickSlideShow(activePane)"
             @item-action="handleItemAction"
             @scale="clickScale($event, activePane)"
             @update:isZoomFit="(val) => handleZoomFitUpdate(val, activePane)"
+            @toggle-full-screen="toggleNativeFullScreen"
             @close="closeWindow"
             @slideshow-next="handleSlideshowNext"
           />
@@ -128,6 +133,7 @@
                 @update:isZoomFit="(val) => handleZoomFitUpdate(val, 'left')"
                 @media-dblclick="toggleZoomFit('left')"
                 @viewport-change="handleViewportChange($event, 'left')"
+                @toggle-full-screen="toggleNativeFullScreen"
                 @close="closeWindow"
                 @slideshow-next="handleSlideshowNext"
               />
@@ -175,6 +181,7 @@
                 @update:isZoomFit="(val) => handleZoomFitUpdate(val, 'right')"
                 @media-dblclick="toggleZoomFit('right')"
                 @viewport-change="handleViewportChange($event, 'right')"
+                @toggle-full-screen="toggleNativeFullScreen"
                 @close="closeWindow"
                 @slideshow-next="handleSlideshowNext"
               />
@@ -273,7 +280,7 @@ import { emit, listen } from '@tauri-apps/api/event';
 import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@/stores/uiStore';
 import { config } from '@/common/config';
-import { isWin, isMac, setTheme, getSlideShowInterval } from '@/common/utils';
+import { isWin, isMac, setTheme, getSlideShowInterval, SCALE_VALUES } from '@/common/utils';
 import {
   editFileComment,
   getFileInfo,
@@ -323,6 +330,7 @@ const isSyncViewport = ref(false);
 const isCompareModeSession = ref(false);
 const syncingPane = ref<'left' | 'right' | ''>('');
 const animateSyncOnce = ref(false);
+const splitToolbarVisible = ref(false);
 
 const isSlideShow = ref(false);     // Slide show state
 const slideShowIntervalIndex = ref(Number(config.settings.slideShowInterval ?? 0));
@@ -356,8 +364,33 @@ const activeFileId = computed(() => {
 });
 const showEmbeddedStatusBar = computed(() => config.settings.showStatusBar && !isFullScreen.value);
 
+function normalizeScale(value: number) {
+  return SCALE_VALUES.find((item) => item === Number(value)) ?? 1;
+}
+
+function applyViewerScale(scale: number) {
+  const normalizedScale = normalizeScale(scale);
+  document.documentElement.style.fontSize = `${normalizedScale * 16}px`;
+}
+
+function handleRootMouseMove(event: MouseEvent) {
+  if (!isFullScreen.value || !isSplit.value) {
+    splitToolbarVisible.value = false;
+    return;
+  }
+  const root = event.currentTarget as HTMLElement | null;
+  if (!root) return;
+  const rect = root.getBoundingClientRect();
+  splitToolbarVisible.value = event.clientY - rect.top < 60;
+}
+
+function handleRootMouseLeave() {
+  splitToolbarVisible.value = false;
+}
+
 onMounted(async() => {
   appWindow.setFocus();
+  applyViewerScale(Number(config.settings.scale || 1));
   window.addEventListener('keydown', handleKeyDown);
   window.addEventListener('resize', handleResize);
 
@@ -522,6 +555,7 @@ onMounted(async() => {
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown);
   window.removeEventListener('resize', handleResize);
+  document.documentElement.style.fontSize = '';
   clearSlideShowTimer();
   
   // unlisten
@@ -541,7 +575,6 @@ function handleKeyDown(event: KeyboardEvent) {
     return;
   }
 
-  const isCmdKey = isMac ? event.metaKey : event.ctrlKey;
   const lowerKey = event.key.toLowerCase();
   const ratingShortcut = Number.parseInt(event.key, 10);
   const hasModifier = event.metaKey || event.ctrlKey || event.altKey;
@@ -700,6 +733,10 @@ watch(() => config.settings.lightTheme, (newLightTheme) => {
 /// watch dark theme
 watch(() => config.settings.darkTheme, (newDarkTheme) => {
   setTheme(config.settings.appearance, newDarkTheme);
+});
+
+watch(() => Number(config.settings.scale || 1), (newScale) => {
+  applyViewerScale(newScale);
 });
 
 // watch language
@@ -943,6 +980,10 @@ const clickZoomActual = (pane: 'left' | 'right' = 'left') => {
 const toggleZoomFit = (pane: 'left' | 'right' = 'left') => {
   const current = getZoomFitByPane(pane);
   handleZoomFitUpdate(!current, pane);
+};
+
+const toggleNativeFullScreen = () => {
+  isFullScreen.value = !isFullScreen.value;
 };
 
 const closeWindow = () => {
