@@ -17,7 +17,7 @@
     <div class="flex-1 w-full flex flex-row relative">
       
       <!-- Markers Area (Left) -->
-      <div 
+      <div v-if="markers.length > 0"
         class="flex-1 h-full relative cursor-row-resize"
         @mouseenter="handleMarkersMouseEnter"
         @mouseleave="handleMarkersMouseLeave"

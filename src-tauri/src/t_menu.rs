@@ -6,8 +6,9 @@ pub fn install_app_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let preferences_item = MenuItemBuilder::with_id("preferences", "Preferences…")
         .accelerator("CmdOrCtrl+,")
         .build(app)?;
-    let about_item = MenuItemBuilder::with_id("about", format!("About {}", app.package_info().name))
-        .build(app)?;
+    let about_item =
+        MenuItemBuilder::with_id("about", format!("About {}", app.package_info().name))
+            .build(app)?;
     let home_item = MenuItemBuilder::with_id("help_homepage", "Lap Home").build(app)?;
     let release_notes_item =
         MenuItemBuilder::with_id("help_release_notes", "Release Notes").build(app)?;
@@ -72,7 +73,9 @@ pub fn handle_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
             }
         }
         "help_homepage" => {
-            let _ = opener::open(option_env!("CARGO_PKG_HOMEPAGE").unwrap_or("https://julyx10.github.io/lap"));
+            let _ = opener::open(
+                option_env!("CARGO_PKG_HOMEPAGE").unwrap_or("https://julyx10.github.io/lap"),
+            );
         }
         "help_release_notes" => {
             let _ = opener::open(format!(

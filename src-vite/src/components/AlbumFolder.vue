@@ -1,5 +1,13 @@
 <template>
-  <ul v-if="children && children.length > 0">
+  <ul
+    v-if="children && children.length > 0"
+    v-bind="treeRoot ? { tabindex: 0 } : {}"
+    ref="treeRootRef"
+    :data-folder-tree-root="treeRoot ? 'true' : undefined"
+    class="outline-none"
+    @keydown="handleLocalTreeKeyDown"
+    @mousedown.capture="focusTreeRoot"
+  >
     <li v-for="child in (children as Folder[])"
       :key="child.id" 
       :id="'folder-' + child.id" 
@@ -61,6 +69,7 @@
         :albumId="albumId"
         :rootPath="rootPath"
         :allowContextMenu="allowContextMenu"
+        :treeRoot="false"
       />
     </li>
   </ul>
@@ -123,11 +132,11 @@ import { ref, nextTick, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@/stores/uiStore';
 import { libConfig } from '@/common/config';
-import { isMac, shortenFilename, isValidFileName, scrollToFolder } from '@/common/utils';
+import { isMac, shortenFilename, isValidFileName } from '@/common/utils';
 import { createFolder, renameFolder, fetchFolder, moveFolder, copyFolder, revealFolder, deleteFolder } from '@/common/api';
 // Hidden for now: folder favorite support.
 // import { setFolderFavorite } from '@/common/api';
-import { Folder } from '@/common/types';
+import { Album, Folder } from '@/common/types';
 import { useAlbumSelection } from '@/composables/useAlbumSelection';
 
 import AlbumFolder from '@/components/AlbumFolder.vue';
@@ -155,12 +164,15 @@ import {
 // used for cross-component communication (Content.vue listens for this event)
 import { emit as tauriEmit } from '@tauri-apps/api/event';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   children?: Folder[];      // subfolders
   albumId: number;          // album id for this folder tree
   rootPath: string;         // root folder path (album path)
   allowContextMenu?: boolean; // whether to show context menu
-}>();
+  treeRoot?: boolean;       // only root tree listens to keyboard
+}>(), {
+  treeRoot: true,
+});
 
 // Inject selection context from AlbumList
 const selection = useAlbumSelection();
@@ -197,6 +209,7 @@ const showMoveTo = ref(false);
 const showCopyTo = ref(false);
 
 const toolTipRef = ref<InstanceType<typeof ToolTip> | null>(null);
+const treeRootRef = ref<HTMLElement | null>(null);
 
 // more menuitems - function that takes the folder being right-clicked
 const getMenuItemsForFolder = (folder: any) => {
@@ -286,6 +299,9 @@ const getMenuItemsForFolder = (folder: any) => {
 /// click folder to select
 const clickFolder = async (albumIdVal: number, folder: Folder) => {
   console.log('AlbumFolder.vue-clickFolder:', albumIdVal, folder);
+  if (props.allowContextMenu) {
+    uiStore.setActivePane('left-sidebar');
+  }
   await selection.selectFolder(albumIdVal, folder);
 };
 
@@ -299,6 +315,128 @@ const expandFolder = async (folder: any, forceRefresh = false) => {
       folder.children = subFolders.children;
     }
   }
+};
+
+const shouldRenderFolder = (folder: Folder) =>
+  folder.id !== 0 || selection.folderPath.value === props.rootPath;
+
+const flattenVisibleFolders = (nodes: Folder[] | undefined, result: Folder[] = []) => {
+  if (!nodes) return result;
+
+  for (const node of nodes) {
+    if (!shouldRenderFolder(node)) continue;
+    result.push(node);
+    if (node.is_expanded && node.id !== 0) {
+      flattenVisibleFolders(node.children, result);
+    }
+  }
+
+  return result;
+};
+
+const getParentFolder = (nodes: Folder[] | undefined, targetPath: string, parent: Folder | null = null): Folder | null => {
+  if (!nodes) return null;
+
+  for (const node of nodes) {
+    if (node.path === targetPath) return parent;
+    const found = getParentFolder(node.children, targetPath, node);
+    if (found) return found;
+  }
+
+  return null;
+};
+
+const getFirstChildFolder = (folder: Folder | null): Folder | null => {
+  if (!folder?.children) return null;
+  return folder.children.find((child: Folder) => shouldRenderFolder(child)) ?? null;
+};
+
+const shouldHandleTreeNavigation = (key: string) => {
+  if (!props.treeRoot) return false;
+  if (selection.albumId.value !== props.albumId || selection.selected.value) return false;
+  if (uiStore.inputStack.length > 0) return false;
+  if (props.allowContextMenu && uiStore.activePane !== 'left-sidebar') return false;
+  if (document.activeElement !== treeRootRef.value) return false;
+
+  const navigationKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Enter'];
+  return navigationKeys.includes(key) && !!selection.folderPath.value && selection.folderPath.value.startsWith(props.rootPath);
+};
+
+const selectFolder = async (folder: Folder | null) => {
+  if (!folder) return;
+  await clickFolder(props.albumId, folder);
+};
+
+const handleTreeKeyDown = async (event: { payload: { key: string } }) => {
+  if (!shouldHandleTreeNavigation(event.payload.key)) return;
+
+  const currentPath = selection.folderPath.value;
+  const visibleFolders = flattenVisibleFolders(props.children);
+  const currentIndex = visibleFolders.findIndex((folder) => folder.path === currentPath);
+  if (currentIndex === -1) return;
+
+  const currentFolder = visibleFolders[currentIndex];
+  switch (event.payload.key) {
+    case 'ArrowUp':
+      await selectFolder(visibleFolders[Math.max(0, currentIndex - 1)] ?? null);
+      break;
+    case 'ArrowDown':
+      await selectFolder(visibleFolders[Math.min(visibleFolders.length - 1, currentIndex + 1)] ?? null);
+      break;
+    case 'ArrowLeft':
+      if (currentFolder.is_expanded) {
+        currentFolder.is_expanded = false;
+      } else if (currentFolder.path === props.rootPath) {
+        if (props.allowContextMenu) {
+          uiStore.setActivePane('left-sidebar');
+        }
+        selection.selectAlbum({
+          id: props.albumId,
+          path: props.rootPath,
+          name: '',
+        } as Album);
+        const albumListRoot = document.querySelector('[data-album-list-root="true"]') as HTMLElement | null;
+        albumListRoot?.focus({ preventScroll: true });
+      } else {
+        const parentFolder = getParentFolder(props.children, currentFolder.path);
+        if (parentFolder) {
+          parentFolder.is_expanded = false;
+          await selectFolder(parentFolder);
+        }
+      }
+      break;
+    case 'ArrowRight':
+      if (!currentFolder.children || currentFolder.children.length === 0) {
+        const subFolders = await fetchFolder(currentFolder.path, false);
+        if (subFolders) {
+          currentFolder.children = subFolders.children;
+        }
+      }
+
+      if (currentFolder.children && currentFolder.children.length > 0) {
+        if (!currentFolder.is_expanded) {
+          currentFolder.is_expanded = true;
+        } else {
+          await selectFolder(getFirstChildFolder(currentFolder));
+        }
+      }
+      break;
+    case 'Home':
+      await selectFolder(visibleFolders[0] ?? null);
+      break;
+    case 'End':
+      await selectFolder(visibleFolders[visibleFolders.length - 1] ?? null);
+      break;
+    case 'Enter':
+      await selectFolder(currentFolder);
+      break;
+  }
+};
+
+const handleLocalTreeKeyDown = (event: KeyboardEvent) => {
+  if (!shouldHandleTreeNavigation(event.key)) return;
+  event.preventDefault();
+  void handleTreeKeyDown({ payload: { key: event.key } });
 };
 
 /// Create new folder
@@ -316,9 +454,7 @@ const clickNewFolder = async (newFolderName: string) => {
       expandFolder(folder, true).then(() => {
         const newFolder = folder.children?.find((child: Folder) => child.path === newFolderPath);
         if (newFolder) {
-          clickFolder(props.albumId, newFolder).then(() => {
-            scrollToFolder(newFolder.id);
-          });
+          clickFolder(props.albumId, newFolder);
         }
       });
     }
@@ -376,6 +512,15 @@ const handleEscKey = (event: KeyboardEvent, folderId: string) => {
 
   isRenamingFolder.value = false; 
   uiStore.removeInputHandler('AlbumFolder-rename');
+};
+
+const focusTreeRoot = () => {
+  if (props.treeRoot) {
+    if (props.allowContextMenu) {
+      uiStore.setActivePane('left-sidebar');
+    }
+    treeRootRef.value?.focus({ preventScroll: true });
+  }
 };
 
 // move folder to dest folder

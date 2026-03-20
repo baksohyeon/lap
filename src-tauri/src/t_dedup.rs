@@ -78,12 +78,8 @@ pub fn start_scan(
     }
 
     std::thread::spawn(move || {
-        let result = scan_and_hash_files(
-            &app_handle,
-            &status_clone,
-            &cancel_flag_clone,
-            query_params,
-        );
+        let result =
+            scan_and_hash_files(&app_handle, &status_clone, &cancel_flag_clone, query_params);
 
         let mut final_status = status_clone.lock().unwrap();
         match result {
@@ -461,9 +457,7 @@ fn rebuild_duplicate_groups(
          HAVING cnt > 1"
     };
 
-    let mut stmt = tx
-        .prepare(group_query)
-        .map_err(|e| e.to_string())?;
+    let mut stmt = tx.prepare(group_query).map_err(|e| e.to_string())?;
 
     let rows: Vec<(String, i64, i64)> = stmt
         .query_map([], |row| {

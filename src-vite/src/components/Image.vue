@@ -204,6 +204,10 @@ const props = defineProps({
     type: Number,
     required: false,
   },
+  fileType: {
+    type: Number,
+    default: 1,
+  },
 });
 
 const emit = defineEmits(['message-from-image-viewer', 'scale', 'update:isZoomFit', 'viewport-change']);
@@ -313,18 +317,15 @@ const preloadCache = new Map<string, Promise<{ src: string; naturalWidth: number
 const warmedNextSrc = ref('');
 const rawBlobUrlMap = new Map<string, string>();
 
-const RAW_EXTENSIONS = new Set([
-  'cr2', 'cr3', 'nef', 'nrw', 'arw', 'srf', 'sr2', 'raf', 'rw2', 'orf', 'pef', 'dng',
-]);
-
 let resizeObserver: ResizeObserver | null = null;
 let positionObserver: number | null = null;
 const suppressViewportEmit = ref(false);
 
-function isRawImagePath(filePath?: string): boolean {
+function shouldUseBackendPreview(filePath?: string): boolean {
   if (!filePath) return false;
+  if (Number(props.fileType || 0) === 3) return true;
   const extension = filePath.split('.').pop()?.toLowerCase() || '';
-  return RAW_EXTENSIONS.has(extension);
+  return extension === 'tif' || extension === 'tiff';
 }
 
 function parseBase64ImagePayload(input: string): { mime: string; base64: string } | null {
@@ -444,7 +445,7 @@ function loadImageResource(filePath?: string) {
       reject(new Error(`Error loading image: ${filePath}`));
     };
 
-    if (isRawImagePath(filePath)) {
+    if (shouldUseBackendPreview(filePath)) {
       getFileImage(filePath)
         .then((result) => {
           if (!result) {

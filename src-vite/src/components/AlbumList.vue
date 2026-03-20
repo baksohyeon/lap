@@ -1,6 +1,14 @@
 <template>
     <!-- albums -->
-    <ul v-if="albums.length > 0" class="flex-1 overflow-x-hidden overflow-y-auto rounded-box select-none">
+    <ul
+      v-if="albums.length > 0"
+      ref="albumListRootRef"
+      tabindex="0"
+      data-album-list-root="true"
+      class="flex-1 overflow-x-hidden overflow-y-auto rounded-box select-none outline-none"
+      @keydown="handleLocalAlbumListKeyDown"
+      @mousedown.capture="focusAlbumListRoot"
+    >
       
       <!-- title -->
       <div v-if="isMainPane" class="sidebar-panel-header">
@@ -33,7 +41,7 @@
         @start="onDragStart"
         @end="onDragEnd" 
       >
-        <li v-for="album in albums" :key="album.id">
+        <li v-for="album in albums" :key="album.id" :data-album-id="album.id">
           <div 
             :class="[
               'mx-1 p-1 h-12 flex items-center rounded-box whitespace-nowrap cursor-pointer group transition-all duration-200 ease-in-out', 
@@ -169,7 +177,7 @@
 
 <script setup lang="ts">
 
-import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { VueDraggable } from 'vue-draggable-plus'
 import { listen, emit as tauriEmit } from '@tauri-apps/api/event';
@@ -234,6 +242,7 @@ let unlistenIndexFinished: (() => void) | undefined;
 
 // Computed to check if we're in main album pane
 const isMainPane = computed(() => props.selectionSource === 'album');
+const albumListRootRef = ref<HTMLElement | null>(null);
 
 const panelMenuItems = computed(() => [
   {
@@ -567,6 +576,10 @@ const clickAlbum = async (album: Album) => {
     return;
   }
 
+  if (isMainPane.value) {
+    uiStore.setActivePane('left-sidebar');
+  }
+
   // In MoveTo dialog, disable album selection and toggle expansion instead
   if (!isMainPane.value) {
     expandAlbum(album);
@@ -609,7 +622,86 @@ const expandAlbum = async (album: any, forceRefresh = false) => {
 /// click folder to select
 const clickFolder = async (albumIdVal: number, folder: Folder) => {
   console.log('AlbumList.vue-clickFolder:', folder);
+  if (isMainPane.value) {
+    uiStore.setActivePane('left-sidebar');
+  }
   await selection.selectFolder(albumIdVal, folder);
+};
+
+const focusAlbumListRoot = () => {
+  if (isMainPane.value) {
+    uiStore.setActivePane('left-sidebar');
+  }
+  albumListRootRef.value?.focus({ preventScroll: true });
+};
+
+const waitForNextFrame = () => new Promise<void>((resolve) => {
+  window.requestAnimationFrame(() => resolve());
+});
+
+const focusExpandedFolderTree = async (albumId: number) => {
+  await nextTick();
+  await waitForNextFrame();
+  const albumListRoot = albumListRootRef.value;
+  const folderTreeRoot = albumListRoot?.querySelector(
+    `[data-album-id="${albumId}"] [data-folder-tree-root="true"]`
+  ) as HTMLElement | null;
+  folderTreeRoot?.focus({ preventScroll: true });
+};
+
+const shouldHandleAlbumListNavigation = (key: string) => {
+  if (uiStore.inputStack.length > 0 || isEditList.value || isDragging.value) return false;
+  if (isMainPane.value && uiStore.activePane !== 'left-sidebar') return false;
+  if (document.activeElement !== albumListRootRef.value) return false;
+
+  const navigationKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Enter'];
+  return navigationKeys.includes(key) && albums.value.length > 0;
+};
+
+const handleAlbumListKeyDown = async (key: string) => {
+  if (!shouldHandleAlbumListNavigation(key)) return;
+
+  const currentIndex = albums.value.findIndex(album => album.id === selection.albumId.value);
+  const fallbackIndex = currentIndex >= 0 ? currentIndex : 0;
+  const currentAlbum = albums.value[fallbackIndex];
+  if (!currentAlbum) return;
+
+  switch (key) {
+    case 'ArrowUp':
+      selection.selectAlbum(albums.value[Math.max(0, fallbackIndex - 1)] ?? currentAlbum);
+      break;
+    case 'ArrowDown':
+      selection.selectAlbum(albums.value[Math.min(albums.value.length - 1, fallbackIndex + 1)] ?? currentAlbum);
+      break;
+    case 'ArrowRight':
+      if (selection.selected.value) {
+        if (!currentAlbum.is_expanded || !currentAlbum.children || currentAlbum.children.length === 0) {
+          await expandAlbum(currentAlbum);
+        }
+
+        const rootFolder = currentAlbum.children?.[0];
+        if (rootFolder) {
+          await clickFolder(currentAlbum.id, rootFolder);
+          await focusExpandedFolderTree(currentAlbum.id);
+        }
+      }
+      break;
+    case 'Home':
+      selection.selectAlbum(albums.value[0] ?? currentAlbum);
+      break;
+    case 'End':
+      selection.selectAlbum(albums.value[albums.value.length - 1] ?? currentAlbum);
+      break;
+    case 'Enter':
+      selection.selectAlbum(currentAlbum);
+      break;
+  }
+};
+
+const handleLocalAlbumListKeyDown = (event: KeyboardEvent) => {
+  if (!shouldHandleAlbumListNavigation(event.key)) return;
+  event.preventDefault();
+  void handleAlbumListKeyDown(event.key);
 };
 
 /// click the final sub-folder to select it

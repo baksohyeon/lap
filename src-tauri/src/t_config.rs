@@ -308,10 +308,7 @@ fn load_app_config_locked() -> Result<AppConfig, String> {
                         return Ok(config);
                     }
 
-                    last_err = Some(format!(
-                        "Failed to parse config file: {}",
-                        parse_err
-                    ));
+                    last_err = Some(format!("Failed to parse config file: {}", parse_err));
                     thread::sleep(Duration::from_millis(30));
                 }
             }
@@ -379,8 +376,7 @@ fn write_atomic(path: &Path, content: &str) -> Result<(), String> {
     let parent = path
         .parent()
         .ok_or_else(|| "Config path has no parent directory".to_string())?;
-    fs::create_dir_all(parent)
-        .map_err(|e| format!("Failed to create parent directory: {}", e))?;
+    fs::create_dir_all(parent).map_err(|e| format!("Failed to create parent directory: {}", e))?;
 
     let stamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -395,8 +391,8 @@ fn write_atomic(path: &Path, content: &str) -> Result<(), String> {
         stamp
     ));
 
-    let mut tmp_file = fs::File::create(&tmp_path)
-        .map_err(|e| format!("Failed to create temp file: {}", e))?;
+    let mut tmp_file =
+        fs::File::create(&tmp_path).map_err(|e| format!("Failed to create temp file: {}", e))?;
     tmp_file
         .write_all(content.as_bytes())
         .map_err(|e| format!("Failed to write temp file: {}", e))?;
@@ -425,7 +421,10 @@ fn write_atomic(path: &Path, content: &str) -> Result<(), String> {
                 }
             }
             let _ = fs::remove_file(&tmp_path);
-            Err(format!("Failed to atomically replace config file: {}", rename_err))
+            Err(format!(
+                "Failed to atomically replace config file: {}",
+                rename_err
+            ))
         }
     }
 }
@@ -451,14 +450,20 @@ fn backup_corrupt_config(path: &Path) -> Result<PathBuf, String> {
 
 fn recover_app_config_from_library_dbs() -> Result<AppConfig, String> {
     let lib_dir = get_libraries_dir()?;
-    let read_dir = fs::read_dir(&lib_dir)
-        .map_err(|e| format!("Failed to read libraries directory '{}': {}", lib_dir.display(), e))?;
+    let read_dir = fs::read_dir(&lib_dir).map_err(|e| {
+        format!(
+            "Failed to read libraries directory '{}': {}",
+            lib_dir.display(),
+            e
+        )
+    })?;
 
     let mut libraries: Vec<Library> = Vec::new();
     let now = chrono::Utc::now().timestamp();
 
     for entry in read_dir {
-        let entry = entry.map_err(|e| format!("Failed to read libraries directory entry: {}", e))?;
+        let entry =
+            entry.map_err(|e| format!("Failed to read libraries directory entry: {}", e))?;
         let path = entry.path();
         if path.extension().and_then(|s| s.to_str()) != Some("db") {
             continue;

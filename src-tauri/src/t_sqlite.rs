@@ -498,14 +498,14 @@ pub struct AFile {
     pub folder_id: i64,  // folder id (from folders table)
 
     // file basic info
-    pub name: String,                // file name
-    pub name_pinyin: Option<String>, // file name pinyin(for sort)
-    pub size: i64,                   // file size
-    pub file_type: Option<i64>,      // file type (0: all, 1: image, 2: video, 3: audio, 4: other)
+    pub name: String,                 // file name
+    pub name_pinyin: Option<String>,  // file name pinyin(for sort)
+    pub size: i64,                    // file size
+    pub file_type: Option<i64>,       // file type (0: all, 1: image, 2: video, 3: audio, 4: other)
     pub format_label: Option<String>, // normalized file format label (from file content)
-    pub created_at: Option<i64>,     // file create timestamp
-    pub modified_at: Option<i64>,    // file modified timestamp
-    pub taken_date: Option<i64>,     // taken date timestamp (e_date_time || modified_at)
+    pub created_at: Option<i64>,      // file create timestamp
+    pub modified_at: Option<i64>,     // file modified timestamp
+    pub taken_date: Option<i64>,      // taken date timestamp (e_date_time || modified_at)
 
     // image/video
     pub width: Option<u32>,    // image/video width
@@ -653,10 +653,7 @@ impl AFile {
                         Reader::new().read_from_container(&mut bufreader).ok()
                     }))
                     .unwrap_or_else(|_| {
-                        eprintln!(
-                            "Panic caught while parsing EXIF for: {}",
-                            file_path
-                        );
+                        eprintln!("Panic caught while parsing EXIF for: {}", file_path);
                         None
                     })
                 })?;
@@ -1332,8 +1329,10 @@ impl AFile {
                             let _ = AThumb::delete(file_id);
                             // remove embeds data
                             let conn = open_conn()?;
-                            let _ =
-                                conn.execute("UPDATE afiles SET embeds = NULL WHERE id = ?1", params![file_id]);
+                            let _ = conn.execute(
+                                "UPDATE afiles SET embeds = NULL WHERE id = ?1",
+                                params![file_id],
+                            );
                             updated_file.has_embedding = Some(false);
                         }
                         return Ok((updated_file, 2));
@@ -1621,7 +1620,11 @@ impl AFile {
     }
 
     fn build_order_clause(params: &QueryParams) -> String {
-        let dir = if params.sort_order == 1 { "DESC" } else { "ASC" };
+        let dir = if params.sort_order == 1 {
+            "DESC"
+        } else {
+            "ASC"
+        };
         match params.sort_type {
             0 => format!("a.taken_date {}, a.id {}", dir, dir),
             1 => format!("a.name_pinyin {}, a.id {}", dir, dir),
@@ -1633,7 +1636,10 @@ impl AFile {
         }
     }
 
-    pub fn get_query_file_position(params: &QueryParams, file_id: i64) -> Result<Option<i64>, String> {
+    pub fn get_query_file_position(
+        params: &QueryParams,
+        file_id: i64,
+    ) -> Result<Option<i64>, String> {
         if file_id <= 0 {
             return Ok(None);
         }
@@ -1655,7 +1661,11 @@ impl AFile {
             Self::build_order_clause(params),
             joins,
             where_clause,
-            if params.person_id > 0 { " GROUP BY a.id" } else { "" }
+            if params.person_id > 0 {
+                " GROUP BY a.id"
+            } else {
+                ""
+            }
         );
 
         // Keep SQL clean when where/group are empty to avoid odd spacing.
@@ -3186,8 +3196,10 @@ fn open_conn() -> Result<Connection, String> {
     conn.busy_timeout(Duration::from_secs(5))
         .map_err(|e| format!("Failed to set SQLite busy timeout: {}", e))?;
 
-    conn.query_row("PRAGMA journal_mode = WAL", [], |row| row.get::<_, String>(0))
-        .map_err(|e| format!("Failed to enable WAL mode: {}", e))?;
+    conn.query_row("PRAGMA journal_mode = WAL", [], |row| {
+        row.get::<_, String>(0)
+    })
+    .map_err(|e| format!("Failed to enable WAL mode: {}", e))?;
 
     conn.execute("PRAGMA synchronous = NORMAL", [])
         .map_err(|e| format!("Failed to set SQLite synchronous mode: {}", e))?;
@@ -3206,8 +3218,7 @@ pub fn create_db() -> Result<(), String> {
         Err(err) => {
             eprintln!("create_db failed: {}. Trying recovery...", err);
             recover_current_db_file()?;
-            create_db_internal()
-                .map_err(|e| format!("Database recovery retry failed: {}", e))
+            create_db_internal().map_err(|e| format!("Database recovery retry failed: {}", e))
         }
     }
 }
@@ -3659,16 +3670,15 @@ fn move_or_copy(src: &Path, dst: &Path) -> Result<(), String> {
     match fs::rename(src, dst) {
         Ok(_) => Ok(()),
         Err(rename_err) => {
-            fs::copy(src, dst)
-                .map_err(|copy_err| {
-                    format!(
-                        "Failed to move '{}' to '{}' (rename: {}, copy: {})",
-                        src.display(),
-                        dst.display(),
-                        rename_err,
-                        copy_err
-                    )
-                })?;
+            fs::copy(src, dst).map_err(|copy_err| {
+                format!(
+                    "Failed to move '{}' to '{}' (rename: {}, copy: {})",
+                    src.display(),
+                    dst.display(),
+                    rename_err,
+                    copy_err
+                )
+            })?;
             fs::remove_file(src)
                 .map_err(|e| format!("Failed to remove source file '{}': {}", src.display(), e))
         }

@@ -3,6 +3,7 @@ import { defineStore } from 'pinia';
 
 export const useUIStore = defineStore('ui', {
   state: () => ({
+    activePane: 'content',
     inputStack: [],
     fileVersions: {},
     isFullScreen: false,
@@ -52,6 +53,9 @@ export const useUIStore = defineStore('ui', {
     }
   },
   actions: {
+    setActivePane(pane) {
+      this.activePane = pane;
+    },
     pushInputHandler(name) {
       this.inputStack.push(name);
     },

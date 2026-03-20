@@ -179,7 +179,7 @@
           @click.stop
         />
         <IconSeparator v-if="mode !== 2" class="t-icon-size-sm text-base-content/30" />
-        <TButton v-if="mode === 0"
+        <TButton
           :icon="!isFullScreen ? IconFullScreen : IconRestoreScreen"
           :tooltip="!isFullScreen ? $t('image_viewer.toolbar.fullscreen') : $t('image_viewer.toolbar.exit_fullscreen')"
           :disabled="!canInteract"
@@ -290,6 +290,7 @@
         ref="mediaRef"
         :filePath="file?.file_path" 
         :fileId="file?.id"
+        :fileType="file?.file_type"
         :nextFilePath="nextFilePath"
         :rotate="file?.rotate ?? 0" 
         :isZoomFit="isZoomFit"

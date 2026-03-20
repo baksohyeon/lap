@@ -15,6 +15,7 @@ use std::io::Cursor;
 use std::path::Path;
 use std::process::Command;
 
+use crate::t_raw;
 use std::panic;
 
 /// Quick probing of image dimensions without loading the entire file
@@ -23,7 +24,20 @@ pub fn get_image_dimensions(file_path: &str) -> Result<(u32, u32), String> {
     let result = panic::catch_unwind(|| imagesize::size(file_path));
 
     match result {
-        Ok(Ok(dimensions)) => Ok((dimensions.width as u32, dimensions.height as u32)),
+        Ok(Ok(dimensions)) => {
+            let width = dimensions.width as u32;
+            let height = dimensions.height as u32;
+
+            if crate::t_raw::is_tiff_path(file_path) {
+                if let Ok((raw_width, raw_height)) = crate::t_raw::get_raw_dimensions(file_path) {
+                    if raw_width > width || raw_height > height {
+                        return Ok((raw_width, raw_height));
+                    }
+                }
+            }
+
+            Ok((width, height))
+        }
         Ok(Err(e)) => Err(e.to_string()),
         Err(_) => {
             eprintln!("Panic caught while getting dimensions for: {}", file_path);
@@ -35,12 +49,67 @@ pub fn get_image_dimensions(file_path: &str) -> Result<(u32, u32), String> {
     }
 }
 
+fn get_raw_dimensions_from_exif(file_path: &str) -> Result<Option<(u32, u32)>, String> {
+    let file = File::open(file_path).map_err(|e| format!("Failed to open RAW image: {}", e))?;
+    let mut reader = BufReader::new(file);
+    let exif = Reader::new()
+        .read_from_container(&mut reader)
+        .map_err(|e| format!("Failed to parse EXIF dimensions: {}", e))?;
+
+    let dimension_tag_pairs = [
+        (Tag::PixelXDimension, Tag::PixelYDimension),
+        (Tag::ImageWidth, Tag::ImageLength),
+    ];
+
+    for (width_tag, height_tag) in dimension_tag_pairs {
+        let width = exif
+            .get_field(width_tag, In::PRIMARY)
+            .and_then(|field| field.value.get_uint(0));
+        let height = exif
+            .get_field(height_tag, In::PRIMARY)
+            .and_then(|field| field.value.get_uint(0));
+
+        if let (Some(width), Some(height)) = (width, height) {
+            if width > 0 && height > 0 {
+                return Ok(Some((width, height)));
+            }
+        }
+    }
+
+    Ok(None)
+}
+
+pub fn get_image_orientation(file_path: &str) -> i32 {
+    let file = match File::open(file_path) {
+        Ok(file) => file,
+        Err(_) => return 1,
+    };
+    let mut reader = BufReader::new(file);
+    let exif = match Reader::new().read_from_container(&mut reader) {
+        Ok(exif) => exif,
+        Err(_) => return 1,
+    };
+
+    exif.get_field(Tag::Orientation, In::PRIMARY)
+        .and_then(|field| field.value.get_uint(0))
+        .map(|value| value as i32)
+        .unwrap_or(1)
+}
+
 /// Get a thumbnail from an image file path
 pub fn get_image_thumbnail(
     file_path: &str,
     orientation: i32,
     thumbnail_size: u32,
 ) -> Result<Option<Vec<u8>>, String> {
+    if crate::t_raw::is_tiff_path(file_path) {
+        if let Ok(Some(data)) =
+            crate::t_raw::get_raw_thumbnail(file_path, orientation, thumbnail_size)
+        {
+            return Ok(Some(data));
+        }
+    }
+
     let result = panic::catch_unwind(|| {
         // Open and decode the image
         let img_reader =
@@ -101,7 +170,10 @@ pub fn get_image_thumbnail(
     match result {
         Ok(v) => v,
         Err(_) => {
-            eprintln!("Panic caught while creating image thumbnail for: {}", file_path);
+            eprintln!(
+                "Panic caught while creating image thumbnail for: {}",
+                file_path
+            );
             Ok(None)
         }
     }
@@ -214,8 +286,31 @@ fn select_embedded_jpeg_for_thumbnail(
 }
 
 pub fn get_raw_preview_image(file_path: &str) -> Result<Option<Vec<u8>>, String> {
+    let orientation = get_image_orientation(file_path);
+
+    if let Ok(Some(data)) = t_raw::get_raw_preview_image(file_path, orientation) {
+        return Ok(Some(data));
+    }
+
     if let Ok(Some(preview)) = select_embedded_jpeg_for_preview(file_path) {
-        return Ok(Some(preview));
+        let image = image::load_from_memory(&preview)
+            .map_err(|e| format!("Failed to decode embedded RAW preview: {}", e))?;
+        let image = match orientation {
+            2 => image.fliph(),
+            3 => image.rotate180(),
+            4 => image.flipv(),
+            5 => image.rotate90().fliph(),
+            6 => image.rotate90(),
+            7 => image.rotate270().fliph(),
+            8 => image.rotate270(),
+            _ => image,
+        };
+        let mut buf = Vec::new();
+        image
+            .to_rgb8()
+            .write_to(&mut Cursor::new(&mut buf), ImageFormat::Jpeg)
+            .map_err(|e| format!("Failed to encode embedded RAW preview: {}", e))?;
+        return Ok(Some(buf));
     }
 
     #[cfg(target_os = "macos")]
@@ -224,7 +319,13 @@ pub fn get_raw_preview_image(file_path: &str) -> Result<Option<Vec<u8>>, String>
     }
 
     // Final fallback for formats that can be decoded directly by `image`.
-    if let Ok(Some(data)) = get_image_thumbnail(file_path, 1, 4096) {
+    if let Ok(Some(data)) = get_image_thumbnail(file_path, orientation, 4096) {
+        return Ok(Some(data));
+    }
+
+    // Final safety net for RAW formats whose large preview cannot be extracted
+    // directly, but where we can still synthesize a large JPEG on demand.
+    if let Ok(Some(data)) = get_raw_thumbnail(file_path, orientation, 4096) {
         return Ok(Some(data));
     }
 
@@ -232,10 +333,25 @@ pub fn get_raw_preview_image(file_path: &str) -> Result<Option<Vec<u8>>, String>
 }
 
 pub fn get_raw_dimensions(file_path: &str) -> Result<(u32, u32), String> {
+    if let Ok((width, height)) = t_raw::get_raw_dimensions(file_path) {
+        if width > 0 && height > 0 {
+            return Ok((width, height));
+        }
+    }
+
     if let Ok((width, height)) = get_image_dimensions(file_path) {
         if width > 0 && height > 0 {
             return Ok((width, height));
         }
+    }
+
+    if let Ok(Some((width, height))) = get_raw_dimensions_from_exif(file_path) {
+        return Ok((width, height));
+    }
+
+    #[cfg(target_os = "macos")]
+    if let Ok(Some((width, height))) = get_dimensions_with_sips(file_path) {
+        return Ok((width, height));
     }
 
     if let Ok(Some(preview)) = select_embedded_jpeg_for_preview(file_path) {
@@ -252,6 +368,10 @@ pub fn get_raw_thumbnail(
     orientation: i32,
     thumbnail_size: u32,
 ) -> Result<Option<Vec<u8>>, String> {
+    if let Ok(Some(data)) = t_raw::get_raw_thumbnail(file_path, orientation, thumbnail_size) {
+        return Ok(Some(data));
+    }
+
     if let Ok(Some(preview)) = select_embedded_jpeg_for_thumbnail(file_path, thumbnail_size) {
         let img = image::load_from_memory(&preview)
             .map_err(|e| format!("Failed to decode RAW preview image: {}", e))?;
@@ -607,6 +727,43 @@ pub fn get_thumbnail_with_sips(
     let _ = fs::remove_file(temp_file);
 
     Ok(Some(data))
+}
+
+#[cfg(target_os = "macos")]
+pub fn get_dimensions_with_sips(file_path: &str) -> Result<Option<(u32, u32)>, String> {
+    let output = Command::new("sips")
+        .arg("-g")
+        .arg("pixelWidth")
+        .arg("-g")
+        .arg("pixelHeight")
+        .arg(file_path)
+        .output()
+        .map_err(|e| format!("Failed to run sips for dimensions: {}", e))?;
+
+    if !output.status.success() {
+        return Err(format!(
+            "sips dimension probe failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let mut width: Option<u32> = None;
+    let mut height: Option<u32> = None;
+
+    for line in stdout.lines() {
+        let line = line.trim();
+        if let Some(value) = line.strip_prefix("pixelWidth:") {
+            width = value.trim().parse::<u32>().ok();
+        } else if let Some(value) = line.strip_prefix("pixelHeight:") {
+            height = value.trim().parse::<u32>().ok();
+        }
+    }
+
+    match (width, height) {
+        (Some(width), Some(height)) if width > 0 && height > 0 => Ok(Some((width, height))),
+        _ => Ok(None),
+    }
 }
 
 #[cfg(target_os = "macos")]

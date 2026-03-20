@@ -2,6 +2,7 @@
 
   <div class="relative flex-1 flex flex-col select-none"
     :class="{ 'opacity-50 pointer-events-none': uiStore.isInputActive('AlbumList-edit') }"
+    @mousedown.capture="activateContentPane"
     @mouseenter="isContentHovered = true"
     @mouseleave="isContentHovered = false"
     @keydown="handleLocalKeyDown"
@@ -68,7 +69,7 @@
         <DropDownSelect
           :options="fileTypeOptions"
           :defaultIndex="config.search.fileType"
-          :disabled="config.main.sidebarIndex === 2 || tempViewMode !== 'none' || showQuickView || isScanStreamingMode"
+          :disabled="isSearchLikeView || tempViewMode !== 'none' || showQuickView || isScanStreamingMode"
           :selected="config.search.fileType !== 0"
           @select="handleFileTypeSelect"
         />
@@ -79,7 +80,7 @@
           :defaultIndex="config.search.sortType"
           :extendOptions="sortExtendOptions"
           :defaultExtendIndex="config.search.sortOrder"
-          :disabled="config.main.sidebarIndex === 2 || tempViewMode !== 'none' || showQuickView || isScanStreamingMode"
+          :disabled="isSearchLikeView || tempViewMode !== 'none' || showQuickView || isScanStreamingMode"
           @select="handleSortTypeSelect"
         />
 
@@ -260,7 +261,7 @@
             :total="totalFileCount"
             :pageSize="visibleItemCount"
             :modelValue="scrollPosition"
-            :markers="timelineData"
+            :markers="isSearchLikeView ? [] : timelineData"
             :selectedIndex="selectedItemIndex"
             @update:modelValue="handleScrollUpdate"
             @select-item="handleTimelineSelectItem"
@@ -1459,6 +1460,10 @@ const keyActions = {
 
 // Local keydown handler for navigation (prevents default browser behavior)
 function handleLocalKeyDown(event: KeyboardEvent) {
+  if (uiStore.activePane === 'left-sidebar') {
+    return;
+  }
+
   // Check for input targets (prevent toggle while typing)
   const target = event.target as HTMLElement;
   if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
@@ -1637,8 +1642,16 @@ function isContentInteractionActive() {
   return isContentHovered.value && !uiStore.mapActive;
 }
 
+function activateContentPane() {
+  uiStore.setActivePane('content');
+}
+
 // Global keydown handler (from Tauri)
 const handleKeyDown = (e: any) => {
+  if (uiStore.activePane === 'left-sidebar') {
+    return;
+  }
+
   if (uiStore.inputStack.length > 0) {
     return;
   }
@@ -4011,6 +4024,12 @@ const sortOptions = computed(() => {
 // sort extend options
 const sortExtendOptions = computed(() => {
   return getSelectOptions(localeMsg.value.toolbar.filter?.sort_order_options);
+});
+
+const isSearchLikeView = computed(() => {
+  return config.main.sidebarIndex === 2 || (
+    config.main.sidebarIndex === 4 && (libConfig.tag as any).tab === 'smart'
+  );
 });
 
 // update image when the select file is changed

@@ -8,8 +8,8 @@ use crate::t_config::{self, AppConfig, Library, LibraryInfo, LibraryState};
 use crate::t_face;
 use crate::t_image;
 use crate::t_sqlite::{
-    ACamera, AFile, AFolder, ALens, ALocation, ATag, AThumb, ATimeLine, Album, ImageSearchParams, Person,
-    QueryParams,
+    ACamera, AFile, AFolder, ALens, ALocation, ATag, AThumb, ATimeLine, Album, ImageSearchParams,
+    Person, QueryParams,
 };
 use crate::t_utils;
 use crate::{t_ai, t_sqlite};
@@ -115,10 +115,15 @@ pub fn get_album(album_id: i64) -> Result<Album, String> {
 /// add an album
 #[tauri::command]
 pub fn add_album(app_handle: tauri::AppHandle, folder_path: &str) -> Result<Album, String> {
-    t_utils::authorize_directory_scope(&app_handle, folder_path)
-        .map_err(|e| format!("Error while authorizing album folder '{}': {}", folder_path, e))?;
+    t_utils::authorize_directory_scope(&app_handle, folder_path).map_err(|e| {
+        format!(
+            "Error while authorizing album folder '{}': {}",
+            folder_path, e
+        )
+    })?;
 
-    Album::add_album_to_db(folder_path).map_err(|e| format!("Error while adding an album to DB: {}", e))
+    Album::add_album_to_db(folder_path)
+        .map_err(|e| format!("Error while adding an album to DB: {}", e))
 }
 
 /// edit an album
@@ -527,7 +532,14 @@ pub async fn get_file_image(file_path: String) -> Result<String, String> {
     let file_type = t_utils::get_file_type(&file_path).unwrap_or(0);
     let image_data = if file_type == 3 {
         t_image::get_raw_preview_image(&file_path)?
-            .ok_or_else(|| format!("Failed to extract embedded RAW preview: {}", file_path))?
+            .ok_or_else(|| format!("Failed to resolve RAW preview image: {}", file_path))?
+    } else if crate::t_raw::is_tiff_path(&file_path) {
+        match t_image::get_raw_preview_image(&file_path) {
+            Ok(Some(data)) => data,
+            _ => tokio::fs::read(&file_path)
+                .await
+                .map_err(|e| format!("Failed to read the image: {}", e))?,
+        }
     } else {
         tokio::fs::read(&file_path)
             .await

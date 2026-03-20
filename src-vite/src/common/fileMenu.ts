@@ -69,7 +69,7 @@ export const useFileMenuItems = (
         label: localeMsg.value.menu.file.edit_image,
         icon: markRaw(IconImageEdit),
         shortcut: isMac ? '⌘E' : 'Ctrl+E',
-        disabled: !isImage,
+        disabled: f.file_type !== 1,
         action: createAction('edit')
       },
       {

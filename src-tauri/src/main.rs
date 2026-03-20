@@ -23,6 +23,7 @@ mod t_image;
 mod t_lens;
 mod t_menu;
 mod t_migration;
+mod t_raw;
 mod t_sqlite;
 mod t_utils;
 mod t_video;
