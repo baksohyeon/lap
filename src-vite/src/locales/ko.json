@@ -326,12 +326,13 @@
       "view_in_new_window": "새 창에서 보기...",
       "copy": "클립보드에 복사",
       "edit_image": "이미지 편집...",
-      "open_in_app": "{app}에서 열기",
+      "open_image_in_app": "{app}에서 이미지 열기...",
+      "open_video_in_app": "{app}에서 동영상 열기...",
       "find_similar_images": "유사 이미지 찾기",
       "find_person_images": "인물 이미지 찾기",
       "find_album_folder": "앨범 폴더 찾기",
       "on_this_day": "과거의 오늘",
-      "print": "인쇄",
+      "print": "이미지 인쇄...",
       "rename": "이름 변경",
       "move_to": "이동...",
       "copy_to": "복사...",
@@ -365,7 +366,7 @@
       "unfavorite": "즐겨찾기 해제",
       "tag": "태그...",
       "comment": "코멘트...",
-      "rotate": "회전"
+      "rotate": "뷰 회전"
     },
     "sort": {
       "sort_by_name": "이름순",
@@ -693,6 +694,11 @@
     "date_time": "yyyy/MM/dd HH:mm:ss",
     "date_time_long": "yyyy년 M월 d일 HH:mm:ss"
   },
+  "print_view": {
+    "title": "인쇄",
+    "loading": "미리 보기를 불러오는 중...",
+    "load_failed": "인쇄할 이미지를 불러오지 못했습니다."
+  },
   "image_viewer": {
     "title": "이미지 뷰어",
     "loading": "로딩 중...",
@@ -706,15 +712,6 @@
       "zoom_out": "축소",
       "zoom_fit": "화면 맞춤",
       "zoom_actual": "실제 크기",
-      "edit": "편집",
-      "rotate": "회전",
-      "favorite": "즐겨찾기",
-      "unfavorite": "즐겨찾기 해제",
-      "tag": "태그",
-      "comment": "코멘트",
-      "info": "정보",
-      "save": "저장",
-      "delete": "삭제",
       "fullscreen": "전체 화면",
       "exit_fullscreen": "전체 화면 종료",
       "pin": "도구 모음 고정",
@@ -744,7 +741,7 @@
       "title": "일반",
       "section_language": "언어",
       "section_appearance": "외관",
-      "section_interface": "인터페이스",
+      "section_interface": "표시",
       "appearance": "외관",
       "appearance_options": [
         "라이트",
@@ -799,8 +796,8 @@
         "크게",
         "더 크게"
       ],
-      "show_button_text": "버튼 텍스트 표시",
-      "show_tool_tip": "툴팁 표시",
+      "show_button_text": "사이드바 레이블 표시",
+      "show_tool_tip": "버튼 팁 표시",
       "show_status_bar": "상태 표시줄",
       "show_map": "지도 표시",
       "show_map_hint": "인터넷 필요",
@@ -863,13 +860,13 @@
       ],
       "auto_play_video": "비디오 자동 재생",
       "show_comment": "코멘트 표시",
-      "show_comment_hint": "새 창에서 보기 시",
+      "show_comment_hint": "뷰어 창에 댓글 표시",
       "external_image_editor": "이미지 열기 앱",
       "external_video_app": "동영상 열기 앱",
       "external_app_not_selected": "선택된 앱이 없습니다",
       "choose_app": "선택",
       "clear_app": "지우기",
-      "navigator_view": "내비게이터 표시",
+      "navigator_view": "내비게이터",
       "navigator_view_options": [
         "자동",
         "항상 표시",

@@ -695,14 +695,6 @@ pub fn get_location_info() -> Result<Vec<ALocation>, String> {
     ALocation::get_from_db().map_err(|e| format!("Error while getting location info: {}", e))
 }
 
-// print
-
-/// print an image: uses platform-specific commands to print an image.
-#[tauri::command]
-pub fn print_image(image_path: &str) -> Result<(), String> {
-    t_image::print_image(image_path).map_err(|e| format!("Error while printing image: {}", e))
-}
-
 // settings
 
 /// get package info

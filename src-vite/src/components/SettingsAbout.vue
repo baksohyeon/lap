@@ -128,7 +128,6 @@ const {
   updateButtonTooltip,
   updateButtonText,
   isUpdateActionEnabled,
-  checkForUpdates,
   handleUpdateAction,
 } = useAppUpdater(localeMsg, toolTipRef);
 
@@ -140,7 +139,5 @@ onMounted(async () => {
   } catch (error) {
     console.error('Failed to load about info:', error);
   }
-
-  void checkForUpdates(false);
 });
 </script>

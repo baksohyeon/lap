@@ -212,8 +212,6 @@ fn main() {
             t_cmds::get_lens_info,
             // location
             t_cmds::get_location_info,
-            // print
-            t_cmds::print_image,
             // settings
             t_cmds::get_package_info,
             t_cmds::get_build_time,

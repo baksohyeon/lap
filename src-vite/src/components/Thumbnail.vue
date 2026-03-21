@@ -87,7 +87,7 @@
         <ContextMenu
           ref="contextMenuRef"
           :class="[
-            !isSelected ? 'invisible group-hover:visible' : ''
+            !isSelected ? 'invisible group-hover:visible bg-base-300/30 rounded-box' : 'bg-base-300/30 rounded-box'
           ]"
           :iconMenu="IconMore"
           :menuItems="menuItems"

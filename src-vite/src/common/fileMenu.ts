@@ -46,6 +46,31 @@ export const useFileMenuItems = (
         action: createAction('open')
       },
       {
+        label: (
+          isVideo
+            ? (localeMsg.value.menu.file.open_video_in_app || 'Open video in {app}...')
+            : (localeMsg.value.menu.file.open_image_in_app || 'Open image in {app}...')
+        ).replace('{app}', isVideo ? videoAppName : imageAppName),
+        hidden: !((isImage && imageAppName) || (isVideo && videoAppName)),
+        disabled: !((isImage && imageAppName) || (isVideo && videoAppName)),
+        icon: markRaw(IconExternal),
+        action: createAction('open-external-app')
+      },
+      {
+        label: localeMsg.value.menu.file.edit_image,
+        icon: markRaw(IconImageEdit),
+        shortcut: isMac ? '⌘E' : 'Ctrl+E',
+        disabled: f.file_type !== 1,
+        action: createAction('edit')
+      },
+      {
+        label: localeMsg.value.menu.file.print,
+        icon: markRaw(IconPrint),
+        disabled: !isImage,
+        action: createAction('print')
+      },
+      { label: "-", action: null },
+      {
         label: localeMsg.value.menu.file.find_similar_images,
         icon: markRaw(IconPhotoSearch),
         shortcut: isMac ? '⌘F' : 'Ctrl+F',
@@ -64,33 +89,6 @@ export const useFileMenuItems = (
         disabled: showFolderFiles.value,
         icon: markRaw(IconFolderSearch),
         action: createAction('album-folder')
-      },
-      { label: "-", action: null },
-      {
-        label: localeMsg.value.menu.file.edit_image,
-        icon: markRaw(IconImageEdit),
-        shortcut: isMac ? '⌘E' : 'Ctrl+E',
-        disabled: f.file_type !== 1,
-        action: createAction('edit')
-      },
-      {
-        label: (localeMsg.value.menu.file.open_in_app || 'Open in {app}').replace('{app}', isVideo ? videoAppName : imageAppName),
-        hidden: !((isImage && imageAppName) || (isVideo && videoAppName)),
-        disabled: !((isImage && imageAppName) || (isVideo && videoAppName)),
-        icon: markRaw(IconExternal),
-        action: createAction('open-external-app')
-      },
-      {
-        label: localeMsg.value.menu.file.print,
-        icon: markRaw(IconPrint),
-        disabled: !isImage,
-        action: createAction('print')
-      },
-      {
-        label: localeMsg.value.menu.meta.rotate,
-        icon: markRaw(IconRotate),
-        shortcut: 'R',
-        action: createAction('rotate')
       },
       { label: "-", action: null },
       {
@@ -154,6 +152,12 @@ export const useFileMenuItems = (
         icon: markRaw(IconComment),
         shortcut: 'C',
         action: createAction('comment')
+      },
+      {
+        label: localeMsg.value.menu.meta.rotate,
+        icon: markRaw(IconRotate),
+        shortcut: 'R',
+        action: createAction('rotate')
       },
       { label: "-", action: null },
       {

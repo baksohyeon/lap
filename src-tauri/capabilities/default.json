@@ -5,7 +5,8 @@
   "windows": [
     "main",
     "imageviewer",
-    "settings"
+    "settings",
+    "print"
   ],
   "permissions": [
     "core:default",

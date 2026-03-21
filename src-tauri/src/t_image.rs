@@ -14,7 +14,6 @@ use std::io::BufReader;
 use std::io::Cursor;
 use std::path::Path;
 use std::process::Command;
-
 use crate::t_raw;
 use std::panic;
 
@@ -399,35 +398,6 @@ pub fn get_raw_thumbnail(
 
     // Fallback for formats that can be decoded directly by `image`.
     get_image_thumbnail(file_path, orientation, thumbnail_size)
-}
-
-/// Print an image using the default system printer
-/// This function is platform-specific and may need to be adjusted for different operating systems
-pub fn print_image(image_path: &str) -> Result<(), String> {
-    // Platform-specific printing logic
-    let output = if cfg!(target_os = "windows") {
-        Command::new("mspaint")
-            .arg("/p")
-            .arg(image_path)
-            .output()
-            .map_err(|e| e.to_string())?
-    } else if cfg!(any(target_os = "macos", target_os = "linux")) {
-        Command::new("lp")
-            .arg(image_path)
-            .output()
-            .map_err(|e| e.to_string())?
-    } else {
-        return Err("Unsupported OS".to_string());
-    };
-
-    if !output.status.success() {
-        return Err(format!(
-            "Failed to print image: {}",
-            String::from_utf8_lossy(&output.stderr)
-        ));
-    }
-
-    Ok(())
 }
 
 /// edit image impl

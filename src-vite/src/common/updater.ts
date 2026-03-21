@@ -4,6 +4,7 @@ import { relaunch } from '@tauri-apps/plugin-process';
 
 const UPDATE_CHECK_INTERVAL = 24 * 60 * 60 * 1000;
 const UPDATE_CHECK_KEY = 'lap_last_update_check';
+const UPDATE_CHECK_TIMEOUT_MS = 30_000;
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (typeof error === 'string' && error.trim()) return error;
@@ -78,6 +79,17 @@ export function useAppUpdater(
     downloadedBytes = 0;
   }
 
+  async function checkWithTimeout() {
+    return await Promise.race([
+      check(),
+      new Promise<never>((_, reject) => {
+        window.setTimeout(() => {
+          reject(new Error('Update check timed out after 30 seconds'));
+        }, UPDATE_CHECK_TIMEOUT_MS);
+      }),
+    ]);
+  }
+
   function handleDownloadEvent(event: DownloadEvent) {
     if (event.event === 'Started') {
       isDownloadingUpdate.value = true;
@@ -120,7 +132,7 @@ export function useAppUpdater(
     resetDownloadProgress();
 
     try {
-      const update = await check();
+      const update = await checkWithTimeout();
       localStorage.setItem(UPDATE_CHECK_KEY, String(Date.now()));
       if (!update) {
         if (manual) {

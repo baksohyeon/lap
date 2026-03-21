@@ -437,6 +437,7 @@ async function clickSettings(tabIndex?: number) {
     minWidth: Math.round(SETTINGS_BASE_WIDTH * getSettingsWindowScale()),
     minHeight: Math.round(SETTINGS_BASE_HEIGHT * getSettingsWindowScale()),
     resizable: true,
+    maximizable: false,
     visible: false, // Start hidden, will show after mount
     transparent: true, // Prevent white flash on show (Tauri 2.x workaround)
     decorations: isMac, // true for macOS, false for Windows

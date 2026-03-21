@@ -548,7 +548,7 @@ import { getAlbum, getQueryCountAndSum, getQueryTimeLine, getQueryFiles, getFold
          setFileRotate, getFileHasTags, setFileFavorite, setFileRating, getTagsForFile, searchSimilarImages, generateEmbedding, 
          revealFolder, getTagName, indexAlbum, listenIndexProgress, listenIndexFinished, setAlbumCover,
          updateFileInfo, addFileToDb, cancelIndexing as cancelIndexingApi, getFacesForFile, listenFaceIndexProgress,
-         openFileWithApp, printImage,
+         openFileWithApp,
          dedupGetGroup, dedupDeleteSelected, getQueryFilePosition } from '@/common/api';  
 import { config, libConfig } from '@/common/config';
 import { getSmartTagById, SMART_TAG_SEARCH_THRESHOLD } from '@/common/smartTags';
@@ -1300,11 +1300,7 @@ function handleItemAction(payload: { action: string, index: number }) {
 
   const actionMap = {
     'open': () => openImageViewer(selectedItemIndex.value, true),
-    'print': () => {
-      const selectedFile = fileList.value[selectedItemIndex.value];
-      if (!selectedFile?.file_path) return;
-      void printImage(selectedFile.file_path);
-    },
+    'print': () => void openPrintWindow(selectedItemIndex.value),
     'edit': () => {
       editImageInitialTab.value = config.imageEditor.tab === 'adjust' ? 'adjust' : 'edit';
       showEditImage.value = true;
@@ -4337,6 +4333,50 @@ async function openImageViewer(
     }
     videoRef.value?.pause();  // pause video playing in preview pane
   }
+}
+
+async function openPrintWindow(index: number) {
+  const selectedFile = fileList.value[index];
+  if (!selectedFile?.file_path) return;
+
+  const webViewLabel = 'print';
+  const encodedFilePath = encodeURIComponent(selectedFile.file_path);
+  const fileType = Number(selectedFile.file_type || 1);
+
+  let printWindow = await WebviewWindow.getByLabel(webViewLabel);
+  if (!printWindow) {
+    printWindow = new WebviewWindow(webViewLabel, {
+      url: `/print-view?filePath=${encodedFilePath}&fileType=${fileType}`,
+      title: localeMsg.value.menu.file.print,
+      width: 960,
+      height: 720,
+      minWidth: 640,
+      minHeight: 480,
+      resizable: true,
+      maximizable: false,
+      visible: false,
+      transparent: true,
+      decorations: isMac,
+      ...(isMac && {
+        titleBarStyle: 'Overlay',
+        hiddenTitle: true,
+        minimizable: false,
+      }),
+    });
+
+    printWindow.once('tauri://error', (e) => {
+      console.error('Error creating print window:', e);
+    });
+    return;
+  }
+
+  await printWindow.setTitle(localeMsg.value.menu.file.print);
+  await printWindow.emit('update-print', {
+    filePath: selectedFile.file_path,
+    fileType,
+  });
+  await printWindow.show();
+  await printWindow.setFocus();
 }
 
 /// Dragging the film strip view splitter
