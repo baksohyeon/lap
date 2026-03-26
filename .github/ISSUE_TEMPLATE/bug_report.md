@@ -7,6 +7,11 @@ assignees: julyx10
 
 ---
 
+Before submitting:
+
+- Please check the active issues first to see whether this is already a known problem. If it is, please leave a comment in the existing issue instead of creating a duplicate.
+- Please report only one problem per issue.
+
 **Describe the bug**
 A clear and concise description of what the bug is.
 
