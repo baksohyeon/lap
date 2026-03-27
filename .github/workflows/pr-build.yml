@@ -81,7 +81,7 @@ jobs:
 
           cargo fetch --manifest-path src-tauri/Cargo.toml
 
-          BUILD_RS=$(find ~/.cargo/registry/src -type f -path "*/ffmpeg-sys-next-8.0.1/build.rs" | head -n 1)
+          BUILD_RS=$(find ~/.cargo/registry/src -type f -path "*/ffmpeg-sys-next-*/build.rs" | head -n 1)
           if [ -z "${BUILD_RS}" ]; then
             echo "Could not find ffmpeg-sys-next build.rs"
             exit 1
@@ -293,18 +293,6 @@ jobs:
           "VCPKG_ROOT=$vcpkgRoot" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "VCPKGRS_TRIPLET=x64-windows" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "VCPKGRS_DYNAMIC=1" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-      - name: Extract LibRaw Windows package
-        shell: pwsh
-        run: |
-          $zipPath = "src-tauri/resources/libraw/LibRaw-0.22.0-Win64.zip"
-          if (-not (Test-Path $zipPath)) {
-            throw "LibRaw Windows package not found: $zipPath"
-          }
-
-          $destRoot = "src-tauri/resources/libraw/windows"
-          New-Item -ItemType Directory -Force -Path $destRoot | Out-Null
-          Expand-Archive -Path $zipPath -DestinationPath $destRoot -Force
 
       - name: Build and Sign (Windows x64)
         uses: tauri-apps/tauri-action@v0.5
