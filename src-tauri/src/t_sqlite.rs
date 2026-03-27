@@ -269,6 +269,25 @@ impl Album {
 
         Ok(())
     }
+
+    /// Recount files for an album from the database and update stored total/indexed.
+    pub fn recount_album(id: i64) -> Result<Self, String> {
+        let conn = open_conn()?;
+        let total: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM afiles a JOIN afolders b ON a.folder_id = b.id WHERE b.album_id = ?1",
+                params![id],
+                |row| row.get(0),
+            )
+            .map_err(|e| e.to_string())?;
+        conn.execute(
+            "UPDATE albums SET total = ?1, indexed = ?1 WHERE id = ?2",
+            params![total, id],
+        )
+        .map_err(|e| e.to_string())?;
+        let result = Self::get_album_by_id(id)?;
+        Ok(result)
+    }
 }
 
 /// Define the album's folder struct

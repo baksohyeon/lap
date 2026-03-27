@@ -561,11 +561,11 @@ import { emit as tauriEmit, listen } from '@tauri-apps/api/event';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@/stores/uiStore';
-import { getAlbum, getQueryCountAndSum, getQueryTimeLine, getQueryFiles, getFolderFiles, getFolderThumbCount,
+import { getAlbum, recountAlbum, getQueryCountAndSum, getQueryTimeLine, getQueryFiles, getFolderFiles, getFolderThumbCount,
          copyImage, renameFile, moveFile, copyFile, deleteFile, deleteDbFile, editFileComment, getFileThumb, getFileInfo,
          setFileRotate, getFileHasTags, setFileFavorite, setFileRating, getTagsForFile, searchSimilarImages, generateEmbedding, 
          revealFolder, getTagName, indexAlbum, listenIndexProgress, listenIndexFinished, setAlbumCover,
-         updateFileInfo, addFileToDb, cancelIndexing as cancelIndexingApi, getFacesForFile, listenFaceIndexProgress,
+         updateFileInfo, addFileToDb, cancelIndexing as cancelIndexingApi, selectFolder, getFacesForFile, listenFaceIndexProgress,
          openFileWithApp, getIndexRecoveryInfo, clearIndexRecoveryInfo,
          dedupGetGroup, dedupDeleteSelected, getQueryFilePosition } from '@/common/api'; 
 import { config, libConfig } from '@/common/config';
@@ -3502,54 +3502,88 @@ const onRenameFile = async (newName: string) => {
   }
 }
 
+const refreshAffectedAlbums = async (albumIds: Array<number | null | undefined>) => {
+  const uniqueAlbumIds = Array.from(
+    new Set(
+      albumIds
+        .map((id) => Number(id || 0))
+        .filter((id) => id > 0),
+    ),
+  );
+
+  if (uniqueAlbumIds.length === 0) return;
+
+  const albums = (
+    await Promise.all(uniqueAlbumIds.map((albumId) => recountAlbum(albumId)))
+  ).filter(Boolean);
+
+  if (albums.length > 0) {
+    await tauriEmit('albums-refreshed', { albums });
+  }
+};
+
 const onMoveTo = async () => {
-  let movedCount = 0;
-  let sourceAlbumId = 0;
+  const affectedAlbumIds = new Set<number>();
+
+  // Resolve destination folder ID: when the user selects an album root (not a
+  // subfolder), destFolder.folderId is null. Ensure the root folder record
+  // exists in afolders so that moved files keep a valid folder_id.
+  let destFolderId = Number(libConfig.destFolder.folderId || 0);
+  if (destFolderId <= 0 && libConfig.destFolder.folderPath) {
+    const destAlbumId = Number(libConfig.destFolder.albumId || 0);
+    if (destAlbumId > 0) {
+      const resolved = await selectFolder(destAlbumId, libConfig.destFolder.folderPath);
+      if (resolved?.id) {
+        destFolderId = resolved.id;
+      }
+    }
+  }
 
   if (selectMode.value && selectedCount.value > 0) {    // multi-select mode
+    const successIds: number[] = [];
     const moves = getActionableSelectedItems()
       .map(async item => {
-        const movedFile = await moveFile(item.id, item.file_path, libConfig.destFolder.folderId, libConfig.destFolder.folderPath);
+        const movedFile = await moveFile(item.id, item.file_path, destFolderId, libConfig.destFolder.folderPath);
         if(movedFile) {
           console.log('onMoveTo:', movedFile);
-          sourceAlbumId = sourceAlbumId || Number(item.album_id || 0);
-          movedCount += 1;
-          removeFromFileList(fileList.value.indexOf(item));
+          affectedAlbumIds.add(Number(item.album_id || 0));
+          successIds.push(item.id);
         }
       });
     await Promise.all(moves); // parallelize DB updates
+    if (successIds.length > 0) {
+      fileList.value = fileList.value.filter((f) => !successIds.includes(f.id));
+      totalFileCount.value = fileList.value.length;
+      totalFileSize.value = fileList.value.reduce((total, file) => total + file.size, 0);
+      selectedItemIndex.value = fileList.value.length > 0 ? Math.min(selectedItemIndex.value, fileList.value.length - 1) : -1;
+    }
   } 
   else if(selectedItemIndex.value >= 0) {               // single select mode
     const file = fileList.value[selectedItemIndex.value];
-    const movedFile = await moveFile(file.id, file.file_path, libConfig.destFolder.folderId, libConfig.destFolder.folderPath);
+    const movedFile = await moveFile(file.id, file.file_path, destFolderId, libConfig.destFolder.folderPath);
     if(movedFile) {
       console.log('onMoveTo:', movedFile);
-      sourceAlbumId = Number(file.album_id || 0);
-      movedCount = 1;
+      affectedAlbumIds.add(Number(file.album_id || 0));
       removeFromFileList(selectedItemIndex.value);
     }
   }
 
   const destAlbumId = Number(libConfig.destFolder.albumId || 0);
-  if (movedCount > 0 && sourceAlbumId > 0 && destAlbumId > 0 && sourceAlbumId !== destAlbumId) {
-    tauriEmit('album-count-delta', {
-      deltas: [
-        { albumId: sourceAlbumId, totalDelta: -movedCount, indexedDelta: -movedCount },
-        { albumId: destAlbumId, totalDelta: movedCount, indexedDelta: movedCount },
-      ],
-    });
-  }
+  if (destAlbumId > 0) affectedAlbumIds.add(destAlbumId);
+  await refreshAffectedAlbums(Array.from(affectedAlbumIds));
 
   showMoveTo.value = false;
 }
 
 const onCopyTo = async () => {
+  const affectedAlbumIds = new Set<number>();
   if (selectMode.value && selectedCount.value > 0) {    // multi-select mode
     const copies = getActionableSelectedItems()
       .map(async item => {
         const copiedFile = await copyFile(item.file_path, libConfig.destFolder.folderPath);
         if(copiedFile) {
           console.log('onCopyTo:', copiedFile);
+          affectedAlbumIds.add(Number(libConfig.destFolder.albumId || 0));
         }
       });
     await Promise.all(copies); // parallelize DB updates
@@ -3559,13 +3593,16 @@ const onCopyTo = async () => {
     const copiedFile = await copyFile(file.file_path, libConfig.destFolder.folderPath);
     if(copiedFile) {
       console.log('onCopyTo:', copiedFile);
+      affectedAlbumIds.add(Number(libConfig.destFolder.albumId || 0));
     }
   }
+  await refreshAffectedAlbums(Array.from(affectedAlbumIds));
   showCopyTo.value = false;
 }
 
 const onTrashFile = async () => {
   const deletedFileIds: number[] = [];
+  const affectedAlbumIds = new Set<number>();
   const shouldAdvanceDedup =
     isDedupPanelOpen.value &&
     !!dedupTrashGroupKey.value;
@@ -3574,11 +3611,15 @@ const onTrashFile = async () => {
 
   if (dedupDeleteFileIds.value.length > 0) {
     const ids = [...dedupDeleteFileIds.value];
+    fileList.value
+      .filter(file => ids.includes(file.id))
+      .forEach(file => affectedAlbumIds.add(Number(file.album_id || 0)));
     const success = await dedupDeleteSelected(null, ids);
     if (success !== undefined) {
       deletedFileIds.push(...ids);
       closeTrashMsgbox();
       await updateContent();
+      await refreshAffectedAlbums(Array.from(affectedAlbumIds));
       tauriEmit('files-deleted', {
         source: 'content',
         fileIds: deletedFileIds,
@@ -3590,19 +3631,26 @@ const onTrashFile = async () => {
   }
   else if (selectMode.value && selectedCount.value > 0) {     // multi-select mode
     const selectedItems = getActionableSelectedItems();
+    selectedItems.forEach(item => affectedAlbumIds.add(Number(item.album_id || 0)));
     deletedFileIds.push(...selectedItems.map(item => item.id));
     const deletes = selectedItems
       .map(async item => {
         await deleteFileAlways(item);
-        removeFromFileList(fileList.value.indexOf(item));
       });
     await Promise.all(deletes); // parallelize DB updates
+    fileList.value = fileList.value.filter((f) => !deletedFileIds.includes(f.id));
+    totalFileCount.value = fileList.value.length;
+    totalFileSize.value = fileList.value.reduce((total, file) => total + file.size, 0);
+    selectedItemIndex.value = fileList.value.length > 0 ? Math.min(selectedItemIndex.value, fileList.value.length - 1) : -1;
   } 
   else if(selectedItemIndex.value >= 0) {               // single select mode
+    affectedAlbumIds.add(Number(fileList.value[selectedItemIndex.value].album_id || 0));
     deletedFileIds.push(fileList.value[selectedItemIndex.value].id);
     await deleteFileAlways(fileList.value[selectedItemIndex.value]);
     removeFromFileList(selectedItemIndex.value);
   }
+
+  await refreshAffectedAlbums(Array.from(affectedAlbumIds));
 
   if (deletedFileIds.length > 0) {
     tauriEmit('files-deleted', {

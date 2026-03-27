@@ -145,6 +145,7 @@ fn main() {
             // album
             t_cmds::get_all_albums,
             t_cmds::get_album,
+            t_cmds::recount_album,
             t_cmds::add_album,
             t_cmds::edit_album,
             t_cmds::remove_album,

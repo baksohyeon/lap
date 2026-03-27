@@ -14,7 +14,6 @@ use crate::t_sqlite::{
 use crate::t_utils;
 use crate::{t_ai, t_sqlite};
 
-use base64::{Engine, engine::general_purpose};
 use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
@@ -110,6 +109,12 @@ pub fn get_all_albums() -> Result<Vec<Album>, String> {
 #[tauri::command]
 pub fn get_album(album_id: i64) -> Result<Album, String> {
     Album::get_album_by_id(album_id).map_err(|e| format!("Error while getting one album: {}", e))
+}
+
+/// recount files for an album and return updated album
+#[tauri::command]
+pub fn recount_album(album_id: i64) -> Result<Album, String> {
+    Album::recount_album(album_id).map_err(|e| format!("Error while recounting album: {}", e))
 }
 
 /// add an album
@@ -546,24 +551,7 @@ pub fn add_file_to_db(folder_id: i64, file_path: &str) -> Result<Option<AFile>, 
 /// get a file's image
 #[tauri::command]
 pub async fn get_file_image(file_path: String) -> Result<String, String> {
-    let file_type = t_utils::get_file_type(&file_path).unwrap_or(0);
-    let image_data = if file_type == 3 {
-        t_image::get_raw_preview_image(&file_path)?
-            .ok_or_else(|| format!("Failed to resolve RAW preview image: {}", file_path))?
-    } else if crate::t_libraw::is_tiff_path(&file_path) {
-        match t_image::get_raw_preview_image(&file_path) {
-            Ok(Some(data)) => data,
-            _ => tokio::fs::read(&file_path)
-                .await
-                .map_err(|e| format!("Failed to read the image: {}", e))?,
-        }
-    } else {
-        tokio::fs::read(&file_path)
-            .await
-            .map_err(|e| format!("Failed to read the image: {}", e))?
-    };
-
-    Ok(general_purpose::STANDARD.encode(image_data))
+    t_image::get_file_image_cached(&file_path).await
 }
 
 /// check if file exists

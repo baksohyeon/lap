@@ -5,17 +5,6 @@
     @wheel="handleImageWheel"
   >
 
-    <!-- hidden warm image -->
-    <img
-      v-if="warmedNextSrc"
-      :src="warmedNextSrc"
-      class="absolute inset-0 opacity-0 pointer-events-none select-none"
-      decoding="sync"
-      loading="eager"
-      draggable="false"
-      aria-hidden="true"
-    />
-
     <!-- Loading overlay -->
     <transition name="fade">
       <div
@@ -50,7 +39,7 @@
       <div 
         v-for="(src, index) in imageSrc"
         v-show="activeImage === index"
-        :key="`img-${src}-${index}`"
+        :key="`img-${imageFilePath[index] || 'empty'}-${index}`"
         class="slide-wrapper absolute inset-0 w-full h-full pointer-events-none overflow-hidden"
       >
         <img
@@ -161,7 +150,7 @@
         @dblclick.stop="toggleZoomFit"
       >
         <!-- nav image -->
-        <img :src="imageSrc[activeImage]" :style="navImageStyle" draggable="false" />
+        <img :src="thumbnailSrc || imageSrc[activeImage]" :style="navImageStyle" draggable="false" />
         <!-- nav box -->
         <div class="absolute top-0 left-0 border-2 border-primary cursor-move" 
           :style="navBoxStyle" 
@@ -180,7 +169,7 @@
 import { ref, shallowRef, triggerRef, watch, onMounted, onBeforeUnmount, computed, nextTick } from 'vue';
 import { useUIStore } from '@/stores/uiStore';
 import { config, libConfig } from '@/common/config';
-import { getAssetSrc } from '@/common/utils';
+import { getAssetSrc, getFileImageObjectUrlFromCache, setFileImageObjectUrlToCache } from '@/common/utils';
 import { getFacesForFile, getFileImage } from '@/common/api';
 import { hasFileImageCache } from '@/common/utils';
 import { RawFace, Face } from '@/common/types';
@@ -329,12 +318,11 @@ let loadingTimeout: NodeJS.Timeout | null = null;
 const activeImageEl = ref<HTMLImageElement | null>(null);
 const currentLoadingId = ref(0);
 const preloadCache = new Map<string, Promise<{ src: string; naturalWidth: number; naturalHeight: number }>>();
-const warmedNextSrc = ref('');
-const rawBlobUrlMap = new Map<string, string>();
 
 let resizeObserver: ResizeObserver | null = null;
-let positionObserver: number | null = null;
 const suppressViewportEmit = ref(false);
+let warmImageTimeout: NodeJS.Timeout | null = null;
+let warmImageIdleId: number | null = null;
 
 // inline loading for RAW preview
 const showInlineLoading = computed(() => shouldUseBackendPreview(props.filePath) && !!props.thumbnailSrc);
@@ -441,16 +429,9 @@ function loadImageResource(filePath?: string) {
     let src = '';
 
     const img = new Image();
+    img.decoding = 'async';
 
-    img.onload = async () => {
-      try {
-        if (typeof img.decode === 'function') {
-          await img.decode();
-        }
-      } catch {
-        // Fall back to onload completion if decode fails.
-      }
-
+    img.onload = () => {
       resolve({
         src,
         naturalWidth: img.naturalWidth,
@@ -478,14 +459,13 @@ function loadImageResource(filePath?: string) {
             return;
           }
 
-          if (rawBlobUrlMap.has(filePath)) {
-            const oldUrl = rawBlobUrlMap.get(filePath);
-            if (oldUrl) {
-              URL.revokeObjectURL(oldUrl);
-            }
+          const cachedObjectUrl = getFileImageObjectUrlFromCache(filePath);
+          if (cachedObjectUrl) {
+            src = cachedObjectUrl;
+          } else {
+            src = createObjectUrlFromBase64(payload.base64, payload.mime);
+            setFileImageObjectUrlToCache(filePath, src);
           }
-          src = createObjectUrlFromBase64(payload.base64, payload.mime);
-          rawBlobUrlMap.set(filePath, src);
           img.src = src;
         })
         .catch((error) => {
@@ -517,18 +497,63 @@ function loadImageResource(filePath?: string) {
 }
 
 function warmImage(filePath?: string) {
-  if (!filePath || filePath === props.filePath) {
-    warmedNextSrc.value = '';
+  if (!filePath || filePath === props.filePath || shouldUseBackendPreview(filePath)) {
     return;
   }
 
-  void loadImageResource(filePath).then((loaded) => {
-    if (props.nextFilePath === filePath) {
-      warmedNextSrc.value = loaded.src;
+  if (warmImageTimeout) {
+    clearTimeout(warmImageTimeout);
+    warmImageTimeout = null;
+  }
+  if (warmImageIdleId !== null && typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
+    window.cancelIdleCallback(warmImageIdleId);
+    warmImageIdleId = null;
+  }
+
+  warmImageTimeout = setTimeout(() => {
+    warmImageTimeout = null;
+    if (props.nextFilePath !== filePath || filePath === props.filePath) return;
+
+    const runWarmup = () => {
+      warmImageIdleId = null;
+      if (props.nextFilePath !== filePath || filePath === props.filePath) return;
+
+      void loadImageResource(filePath).catch(() => {
+        // Ignore preload failures and let the main load path surface errors.
+      });
+    };
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      warmImageIdleId = window.requestIdleCallback(runWarmup, { timeout: 300 });
+      return;
     }
-  }).catch(() => {
-    // Ignore preload failures and let the main load path surface errors.
-  });
+
+    queueMicrotask(runWarmup);
+  }, 150);
+}
+
+function cancelWarmImageScheduling() {
+  if (warmImageTimeout) {
+    clearTimeout(warmImageTimeout);
+    warmImageTimeout = null;
+  }
+  if (warmImageIdleId !== null && typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
+    window.cancelIdleCallback(warmImageIdleId);
+    warmImageIdleId = null;
+  }
+}
+
+function clearStalePreloadEntries(activeFilePath?: string, nextFilePath?: string) {
+  const keep = new Set<string>();
+  if (activeFilePath) keep.add(activeFilePath);
+  if (nextFilePath) keep.add(nextFilePath);
+
+  for (const key of preloadCache.keys()) {
+    if (!keep.has(key)) {
+      preloadCache.delete(key);
+    }
+  }
+
 }
 
 function loadPlaceholderResource(src?: string) {
@@ -539,15 +564,8 @@ function loadPlaceholderResource(src?: string) {
     }
 
     const img = new Image();
-    img.onload = async () => {
-      try {
-        if (typeof img.decode === 'function') {
-          await img.decode();
-        }
-      } catch {
-        // ignore decode failures and keep loaded image
-      }
-
+    img.decoding = 'async';
+    img.onload = () => {
       resolve({
         src,
         naturalWidth: img.naturalWidth,
@@ -557,6 +575,34 @@ function loadPlaceholderResource(src?: string) {
     img.onerror = () => reject(new Error('Failed to load placeholder image'));
     img.src = src;
   });
+}
+
+function setImageSlot(
+  slotIndex: number,
+  filePath: string,
+  src: string,
+  naturalWidth: number,
+  naturalHeight: number,
+) {
+  imageSrc.value[slotIndex] = src;
+  imageFilePath.value[slotIndex] = filePath;
+  imageRotate.value[slotIndex] = props.rotate;
+  imageSize.value[slotIndex] = {
+    width: naturalWidth,
+    height: naturalHeight,
+  };
+
+  if (props.rotate % 180 === 90) {
+    imageSizeRotated.value[slotIndex] = {
+      width: naturalHeight,
+      height: naturalWidth,
+    };
+  } else {
+    imageSizeRotated.value[slotIndex] = {
+      width: naturalWidth,
+      height: naturalHeight,
+    };
+  }
 }
 
 // navigator container style
@@ -842,7 +888,6 @@ onMounted(() => {
   if (container.value) {
     resizeObserver.observe(container.value);  // Observe container size changes
     updatePosition();   // Initial position calculation
-    startPositionObserver();  // Observe position changes using requestAnimationFrame
   }
 });
 
@@ -851,12 +896,10 @@ onBeforeUnmount(() => {
     resizeObserver.unobserve(container.value);
     resizeObserver.disconnect();
   }
-  if (positionObserver) cancelAnimationFrame(positionObserver);
   if (loadingTimeout) { // Clear timeout on unmount
     clearTimeout(loadingTimeout);
   }
-  rawBlobUrlMap.forEach((url) => URL.revokeObjectURL(url));
-  rawBlobUrlMap.clear();
+  cancelWarmImageScheduling();
 });
 
 const updatePosition = () => {
@@ -866,24 +909,13 @@ const updatePosition = () => {
   }
 };
 
-const startPositionObserver = () => {
-  const observePosition = () => {
-    updatePosition();
-    positionObserver = requestAnimationFrame(observePosition);
-  };
-  positionObserver = requestAnimationFrame(observePosition);
-};
-
-// watch filePath changes
-watch(() => props.nextFilePath, (nextFilePath) => {
-  warmImage(nextFilePath);
-}, { immediate: true });
-
 // watch filePath changes
 watch(() => props.filePath, async (newFilePath) => {
   // Cancel previous loading
   currentLoadingId.value++;
   const loadingId = currentLoadingId.value;
+  cancelWarmImageScheduling();
+  clearStalePreloadEntries(newFilePath || '', props.nextFilePath || '');
 
   if (loadingTimeout) {
     clearTimeout(loadingTimeout);
@@ -910,24 +942,13 @@ watch(() => props.filePath, async (newFilePath) => {
       const placeholder = await loadPlaceholderResource(props.thumbnailSrc);
       if (loadingId === currentLoadingId.value) {
         const nextImageIndex = activeImage.value ^ 1;
-        imageSrc.value[nextImageIndex] = placeholder.src;
-        imageFilePath.value[nextImageIndex] = newFilePath;
-        imageRotate.value[nextImageIndex] = props.rotate;
-        imageSize.value[nextImageIndex] = {
-          width: placeholder.naturalWidth,
-          height: placeholder.naturalHeight,
-        };
-        if (props.rotate % 180 === 90) {
-          imageSizeRotated.value[nextImageIndex] = {
-            width: placeholder.naturalHeight,
-            height: placeholder.naturalWidth,
-          };
-        } else {
-          imageSizeRotated.value[nextImageIndex] = {
-            width: placeholder.naturalWidth,
-            height: placeholder.naturalHeight,
-          };
-        }
+        setImageSlot(
+          nextImageIndex,
+          newFilePath,
+          placeholder.src,
+          placeholder.naturalWidth,
+          placeholder.naturalHeight,
+        );
         showPlaceholderImage(nextImageIndex);
       }
     } catch {
@@ -947,31 +968,45 @@ watch(() => props.filePath, async (newFilePath) => {
 
     nextTick(() => {
       isZoomFit.value = props.isZoomFit;
-      const nextImageIndex = activeImage.value ^ 1;
-      scale.value[nextImageIndex] = 1;
-      position.value[nextImageIndex] = { x: 0, y: 0 };
+      const activeIndex = activeImage.value;
+      const showingPlaceholderForCurrentFile = usesBackendPreview
+        && imageFilePath.value[activeIndex] === newFilePath;
 
-      imageSrc.value[nextImageIndex] = loaded.src;
-      imageFilePath.value[nextImageIndex] = newFilePath;
-      imageRotate.value[nextImageIndex] = props.rotate;
-      imageSize.value[nextImageIndex] = {
-        width: loaded.naturalWidth,
-        height: loaded.naturalHeight,
-      };
+      if (showingPlaceholderForCurrentFile) {
+        noTransition.value = true;
+        setImageSlot(
+          activeIndex,
+          newFilePath,
+          loaded.src,
+          loaded.naturalWidth,
+          loaded.naturalHeight,
+        );
 
-      if (props.rotate % 180 === 90) {
-        imageSizeRotated.value[nextImageIndex] = {
-          width: loaded.naturalHeight,
-          height: loaded.naturalWidth,
-        };
+        if (containerSize.value.width > 0) {
+          if (isZoomFit.value) {
+            updateZoomFit(true);
+          } else {
+            clampPosition(true);
+          }
+        }
+
+        setTimeout(() => {
+          noTransition.value = false;
+        }, 150);
       } else {
-        imageSizeRotated.value[nextImageIndex] = {
-          width: loaded.naturalWidth,
-          height: loaded.naturalHeight,
-        };
+        const nextImageIndex = activeIndex ^ 1;
+        scale.value[nextImageIndex] = 1;
+        position.value[nextImageIndex] = { x: 0, y: 0 };
+        setImageSlot(
+          nextImageIndex,
+          newFilePath,
+          loaded.src,
+          loaded.naturalWidth,
+          loaded.naturalHeight,
+        );
+        onImageReady(nextImageIndex);
       }
-
-      onImageReady(nextImageIndex);
+      warmImage(props.nextFilePath);
     });
   } catch (e) {
     console.error("Error getting asset source:", e);
@@ -1236,6 +1271,7 @@ const zoomFit = (force: boolean = false) => {
 // Reset zoom level and position
 const zoomReset = (force: boolean = false) => {
   console.log('zoomReset');
+  updatePosition();
   const mousePos = mousePosition.value;
   const containerPosVal = containerPos.value;
   zoomImage(mousePos.x - containerPosVal.x, mousePos.y - containerPosVal.y, 1, force);
@@ -1244,6 +1280,7 @@ const zoomReset = (force: boolean = false) => {
 // start dragging
 const handleImageMouseDown = (event: MouseEvent) => {
   event.preventDefault();
+  updatePosition();
 
   if (event.button === 0) {     // left click: drag image
     isDraggingImage.value = true;
@@ -1267,6 +1304,7 @@ const handleImageMouseDown = (event: MouseEvent) => {
 const handleImageMouseMove = (event: MouseEvent) => {
   // update mouse position
   mousePosition.value = { x: event.clientX, y: event.clientY };
+  updatePosition();
 
   if (!isDraggingImage.value) return;
 
@@ -1371,6 +1409,7 @@ function handleTransitionEnd() {
 function handleImageWheel(event: WheelEvent) {
   event.preventDefault();
   event.stopPropagation();
+  updatePosition();
 
   // Simple touchpad detection: if there's horizontal delta, it's a touchpad
   // Mouse wheels only scroll vertically (deltaY only)
@@ -1674,14 +1713,8 @@ defineExpose({
   clearPreloadCache: (filePath?: string) => {
     if (filePath) {
       preloadCache.delete(filePath);
-      if (rawBlobUrlMap.has(filePath)) {
-        URL.revokeObjectURL(rawBlobUrlMap.get(filePath)!);
-        rawBlobUrlMap.delete(filePath);
-      }
     } else {
       preloadCache.clear();
-      rawBlobUrlMap.forEach((url) => URL.revokeObjectURL(url));
-      rawBlobUrlMap.clear();
     }
   },
 });

@@ -5,15 +5,22 @@
  * date:    2024-08-08
  */
 use arboard::Clipboard;
+use base64::Engine;
 use exif::{In, Reader, Tag};
 use image::{DynamicImage, GenericImageView, ImageFormat, ImageReader};
+use once_cell::sync::Lazy;
 use rusqlite::Result;
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, VecDeque};
+use std::fs;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Cursor;
 use std::panic;
 use std::path::Path;
+use std::sync::Mutex;
+use std::time::UNIX_EPOCH;
+
 #[cfg(target_os = "macos")]
 use std::process::Command;
 
@@ -781,4 +788,116 @@ pub fn get_heic_thumbnail_with_sips(
     thumbnail_size: u32,
 ) -> Result<Option<Vec<u8>>, String> {
     get_thumbnail_with_sips(file_path, thumbnail_size)
+}
+
+const FILE_IMAGE_RESULT_CACHE_MAX: usize = 8;
+
+#[derive(Clone)]
+struct FileImageCacheEntry {
+    signature: (u64, u128),
+    encoded: String,
+}
+
+struct FileImageResultCache {
+    entries: HashMap<String, FileImageCacheEntry>,
+    order: VecDeque<String>,
+}
+
+impl FileImageResultCache {
+    fn new() -> Self {
+        Self {
+            entries: HashMap::new(),
+            order: VecDeque::new(),
+        }
+    }
+
+    fn get(&mut self, file_path: &str, signature: (u64, u128)) -> Option<String> {
+        let entry = self.entries.get(file_path)?;
+        if entry.signature != signature {
+            self.entries.remove(file_path);
+            self.order.retain(|item| item != file_path);
+            return None;
+        }
+
+        self.order.retain(|item| item != file_path);
+        self.order.push_back(file_path.to_string());
+        Some(entry.encoded.clone())
+    }
+
+    fn insert(&mut self, file_path: String, signature: (u64, u128), encoded: String) {
+        self.entries.insert(
+            file_path.clone(),
+            FileImageCacheEntry { signature, encoded },
+        );
+        self.order.retain(|item| item != &file_path);
+        self.order.push_back(file_path);
+
+        while self.order.len() > FILE_IMAGE_RESULT_CACHE_MAX {
+            if let Some(oldest) = self.order.pop_front() {
+                self.entries.remove(&oldest);
+            }
+        }
+    }
+}
+
+static FILE_IMAGE_RESULT_CACHE: Lazy<Mutex<FileImageResultCache>> =
+    Lazy::new(|| Mutex::new(FileImageResultCache::new()));
+
+fn get_file_signature(file_path: &str) -> Result<(u64, u128), String> {
+    let metadata = fs::metadata(file_path)
+        .map_err(|e| format!("Failed to read file metadata for cache: {}", e))?;
+    let modified = metadata
+        .modified()
+        .map_err(|e| format!("Failed to read file modified time for cache: {}", e))?
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| format!("Invalid file modified time for cache: {}", e))?
+        .as_millis();
+    Ok((metadata.len(), modified))
+}
+
+fn should_cache_file_image_result(file_path: &str, file_type: i64) -> bool {
+    file_type == 3 || crate::t_libraw::is_tiff_path(file_path)
+}
+
+pub async fn get_file_image_cached(file_path: &str) -> Result<String, String> {
+    let file_type = t_utils::get_file_type(file_path).unwrap_or(0);
+    let cache_signature = if should_cache_file_image_result(file_path, file_type) {
+        Some(get_file_signature(file_path)?)
+    } else {
+        None
+    };
+
+    if let Some(signature) = cache_signature {
+        if let Ok(mut cache) = FILE_IMAGE_RESULT_CACHE.lock() {
+            if let Some(cached) = cache.get(file_path, signature) {
+                return Ok(cached);
+            }
+        }
+    }
+
+    let image_data = if file_type == 3 {
+        get_raw_preview_image(file_path)?
+            .ok_or_else(|| format!("Failed to resolve RAW preview image: {}", file_path))?
+    } else if crate::t_libraw::is_tiff_path(file_path) {
+        match get_raw_preview_image(file_path) {
+            Ok(Some(data)) => data,
+            _ => tokio::fs::read(file_path)
+                .await
+                .map_err(|e| format!("Failed to read the image: {}", e))?,
+        }
+    } else {
+        tokio::fs::read(file_path)
+            .await
+            .map_err(|e| format!("Failed to read the image: {}", e))?
+    };
+
+    let encoded = base64::engine::general_purpose::STANDARD.encode(image_data);
+
+    if let Some(signature) = cache_signature {
+        if let Ok(mut cache) = FILE_IMAGE_RESULT_CACHE.lock() {
+            cache.insert(file_path.to_string(), signature, encoded.clone());
+        }
+    }
+
+    Ok(encoded)
 }

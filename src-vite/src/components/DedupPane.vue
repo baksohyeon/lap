@@ -146,7 +146,18 @@
               @click="handleDuplicateSelection(item.file_id)"
               @dblclick="handleDuplicateSelection(item.file_id, true)"
             >
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2" 
+                @click="toggleDupSelected(activeGroup.id, item.file_id)"
+                @dblclick.stop
+              >
+                <label class="flex items-center cursor-pointer shrink-0" @click.stop>
+                  <input
+                    type="checkbox"
+                    class="checkbox checkbox-sm checkbox-primary"
+                    :checked="isDupSelected(activeGroup.id, item.file_id)"
+                    @change="toggleDupSelected(activeGroup.id, item.file_id)"
+                  />
+                </label>
                 <div class="w-10 h-10 rounded-box overflow-hidden bg-base-content/5 border border-base-content/10 shrink-0">
                   <img v-if="item.file?.thumbnail" :src="item.file.thumbnail" class="w-full h-full object-cover" />
                   <div v-else class="w-full h-full skeleton"></div>
@@ -164,14 +175,6 @@
                     <template v-if="item.file?.width && item.file?.height"> · {{ item.file.width }} x {{ item.file.height }}</template>
                   </div>
                 </div>
-                <label class="flex items-center cursor-pointer shrink-0" @click.stop>
-                  <input
-                    type="checkbox"
-                    class="checkbox checkbox-xs"
-                    :checked="isDupSelected(activeGroup.id, item.file_id)"
-                    @change="toggleDupSelected(activeGroup.id, item.file_id)"
-                  />
-                </label>
                 <button class="btn btn-xs btn-ghost shrink-0" @click.stop="setKeep(activeGroup.id, item.file_id)">
                   {{ $t('info_panel.dedup.set_keep') }}
                 </button>

@@ -416,10 +416,11 @@ export function getCountryName(cc: string, lang: string = 'en'): string {
   }
 }
 
-// file image cache (LRU, max 3 entries)
-const FILE_IMAGE_CACHE_MAX = 3;
+// file image cache (LRU, keeps current plus nearby images warm)
+const FILE_IMAGE_CACHE_MAX = 7;
 const fileImageCache = new Map<string, any>();
 const fileImagePending = new Map<string, Promise<any>>();
+const fileImageObjectUrlCache = new Map<string, string>();
 
 function touchFileImageCache(filePath: string) {
   if (!fileImageCache.has(filePath)) return;
@@ -443,7 +444,14 @@ export function setFileImageToCache(filePath: string, value: any) {
   fileImageCache.set(filePath, value);
   while (fileImageCache.size > FILE_IMAGE_CACHE_MAX) {
     const oldest = fileImageCache.keys().next().value;
-    if (oldest !== undefined) fileImageCache.delete(oldest);
+    if (oldest !== undefined) {
+      fileImageCache.delete(oldest);
+      const objectUrl = fileImageObjectUrlCache.get(oldest);
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        fileImageObjectUrlCache.delete(oldest);
+      }
+    }
   }
 }
 
@@ -463,13 +471,42 @@ export function clearFileImageCache(filePath: string) {
   if (!filePath) return;
   fileImageCache.delete(filePath);
   fileImagePending.delete(filePath);
+  const objectUrl = fileImageObjectUrlCache.get(filePath);
+  if (objectUrl) {
+    URL.revokeObjectURL(objectUrl);
+    fileImageObjectUrlCache.delete(filePath);
+  }
 }
 
 export function clearAllFileImageCache() {
   fileImageCache.clear();
   fileImagePending.clear();
+  fileImageObjectUrlCache.forEach((objectUrl) => URL.revokeObjectURL(objectUrl));
+  fileImageObjectUrlCache.clear();
 }
 
 export function hasFileImageCache(filePath: string): boolean {
   return !!filePath && fileImageCache.has(filePath);
+}
+
+export function getFileImageObjectUrlFromCache(filePath: string): string | undefined {
+  if (!filePath || !fileImageObjectUrlCache.has(filePath)) {
+    return undefined;
+  }
+  const objectUrl = fileImageObjectUrlCache.get(filePath)!;
+  fileImageObjectUrlCache.delete(filePath);
+  fileImageObjectUrlCache.set(filePath, objectUrl);
+  return objectUrl;
+}
+
+export function setFileImageObjectUrlToCache(filePath: string, objectUrl: string) {
+  if (!filePath || !objectUrl) return;
+
+  const existing = fileImageObjectUrlCache.get(filePath);
+  if (existing && existing !== objectUrl) {
+    URL.revokeObjectURL(existing);
+  }
+
+  fileImageObjectUrlCache.delete(filePath);
+  fileImageObjectUrlCache.set(filePath, objectUrl);
 }

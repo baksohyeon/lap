@@ -183,6 +183,19 @@ export async function getAlbum(albumId) {
   return null;
 }
 
+// recount files for an album and return updated album
+export async function recountAlbum(albumId) {
+  if(!albumId) {
+    return null;
+  }
+  try {
+    return await invoke('recount_album', { albumId });
+  } catch (error) {
+    console.error('recountAlbum...', error);
+  }
+  return null;
+}
+
 // add an album to db
 export async function addAlbum(folderPath) {
   if(!folderPath) {

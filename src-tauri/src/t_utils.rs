@@ -1232,8 +1232,9 @@ pub async fn index_album_worker(
         }
     }
 
-    // index finished
-    let _ = Album::update_progress(album_id, current_progress, total_files);
+    // index finished – recount from the database to get the true total
+    // (some files may have been skipped or failed to insert).
+    let _ = Album::recount_album(album_id);
 
     // 5. Set album cover if needed (must happen before index_finished event)
     // so frontend refresh gets the latest cover_file_id immediately.

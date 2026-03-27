@@ -239,7 +239,7 @@ let unlistenAlbumCoverChanged: () => void;
 let unlistenExpandAlbumFolder: (() => void) | undefined;
 let unlistenIndexProgress: (() => void) | undefined;
 let unlistenIndexFinished: (() => void) | undefined;
-let unlistenAlbumCountDelta: (() => void) | undefined;
+let unlistenAlbumsRefreshed: (() => void) | undefined;
 
 // Computed to check if we're in main album pane
 const isMainPane = computed(() => props.selectionSource === 'album');
@@ -435,18 +435,19 @@ onMounted( async () => {
     }
   });
 
-  unlistenAlbumCountDelta = await listen('album-count-delta', async (event: any) => {
-    const deltas = Array.isArray(event.payload?.deltas) ? event.payload.deltas : [];
-    for (const delta of deltas) {
-      const albumId = Number(delta?.albumId || 0);
+  unlistenAlbumsRefreshed = await listen('albums-refreshed', async (event: any) => {
+    const refreshedAlbums = Array.isArray(event.payload?.albums) ? event.payload.albums : [];
+    for (const updatedAlbum of refreshedAlbums) {
+      const albumId = Number(updatedAlbum?.id || 0);
       if (albumId <= 0) continue;
       const album = getAlbumById(albumId);
       if (!album) continue;
 
-      const totalDelta = Number(delta?.totalDelta || 0);
-      const indexedDelta = Number(delta?.indexedDelta || 0);
-      album.total = Math.max(0, Number(album.total || 0) + totalDelta);
-      album.indexed = Math.max(0, Number(album.indexed ?? album.total ?? 0) + indexedDelta);
+      album.total = updatedAlbum.total;
+      album.indexed = updatedAlbum.indexed;
+      if (updatedAlbum.cover_file_id !== undefined) {
+        album.cover_file_id = updatedAlbum.cover_file_id;
+      }
     }
   });
 
@@ -458,7 +459,7 @@ onBeforeUnmount(() => {
   if (unlistenExpandAlbumFolder) unlistenExpandAlbumFolder();
   if (unlistenIndexProgress) unlistenIndexProgress();
   if (unlistenIndexFinished) unlistenIndexFinished();
-  if (unlistenAlbumCountDelta) unlistenAlbumCountDelta();
+  if (unlistenAlbumsRefreshed) unlistenAlbumsRefreshed();
 });
 
 /// Add a new album
