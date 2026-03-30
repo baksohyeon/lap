@@ -301,7 +301,7 @@ jobs:
           $work = Join-Path $env:RUNNER_TEMP "directml"
           $zip = Join-Path $work "directml.zip"
           $pkg = Join-Path $work "pkg"
-          $dest = Join-Path $env:GITHUB_WORKSPACE "src-tauri/target/x86_64-pc-windows-msvc/release/DirectML.dll"
+          $dest = Join-Path $env:GITHUB_WORKSPACE "src-tauri/resources/onnx/DirectML.dll"
           $destDir = Split-Path $dest -Parent
 
           New-Item -ItemType Directory -Force -Path $work | Out-Null
