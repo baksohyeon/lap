@@ -60,9 +60,9 @@
     </div>
 
     <!-- Display message if no data are found -->
-    <div v-else class="mt-8 px-2 flex flex-col items-center justify-center text-base-content/30">
-        <IconCamera class="w-8 h-8 mb-2" />
-        <span class="text-sm text-center">{{ $t('tooltip.not_found.camera') }}</span>
+    <div v-else class="mt-2 px-2 flex flex-col items-center justify-center text-base-content/30">
+      <!-- <IconCamera class="w-8 h-8 mb-2" /> -->
+      <span class="text-sm text-center">{{ $t('tooltip.not_found.camera_hint') }}</span>
     </div>
   </div>
 

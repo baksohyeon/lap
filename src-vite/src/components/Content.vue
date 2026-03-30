@@ -1727,9 +1727,19 @@ function activateContentPane() {
   uiStore.setActivePane('content');
 }
 
+function isTextInputFocused() {
+  const active = document.activeElement as HTMLElement | null;
+  if (!active) return false;
+  return active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable;
+}
+
 // Global keydown handler (from Tauri)
 const handleKeyDown = (e: any) => {
   if (uiStore.activePane === 'left-sidebar') {
+    return;
+  }
+
+  if (isTextInputFocused()) {
     return;
   }
 

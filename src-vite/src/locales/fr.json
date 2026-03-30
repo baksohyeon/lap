@@ -21,7 +21,7 @@
       "select_folder": "Choisir dossier",
       "name": "Nom",
       "description": "Description",
-      "description_placeholder": "Entrer une description",
+      "description_placeholder": "Entrer la description de l'album",
       "images": "Images",
       "videos": "Vidéos",
       "files_count": "{count} fichiers ({size})",
@@ -41,8 +41,8 @@
     "filename_search": "Nom de fichier",
     "image_search_placeholder": "Rechercher par texte",
     "image_search_history": "Historique",
-    "image_search_tips": "Entrez une description. Ex: \"coucher de soleil sur l'océan\".",
-    "similar_images_tips": "Sélectionnez une image pour trouver des similaires",
+    "image_search_tips": "Entrez une description pour rechercher des images",
+    "similar_images_tips": "Sélectionnez une image pour trouver des images similaires",
     "filename_search_tips": "Entrez un nom de fichier",
     "index": {
       "wait_index": "En attente du scan...",
@@ -76,6 +76,7 @@
     "resume": "Reprendre"
   },
   "favorite": {
+    "tab_favorite": "Favoris",
     "files": "Fichiers favoris",
     "folders": "Dossiers favoris",
     "ratings": "Notes",
@@ -263,17 +264,23 @@
       "person": "La reconnaissance faciale est en bêta et peut être imprécise."
     },
     "not_found": {
-      "albums": "Aucun album trouvé",
+      "albums": "Aucun album trouvé. Ajoutez un dossier avec des images ou des vidéos",
       "files": "Aucun fichier trouvé",
       "folder_files": "Ce dossier ne contient aucun fichier",
-      "folder_files_hint": "Essayez un sous-dossier. Lap lit directement les fichiers du système et met à jour l’album automatiquement.",
+      "folder_files_hint": "Essayez un sous-dossier. Lap lit directement les fichiers du système",
       "folders": "Aucun dossier trouvé",
+      "favorite_folders": "Aucun dossier favori trouvé",
+      "favorite_folders_hint": "Mettez un dossier en favori dans Albums pour voir ici ses fichiers et sous-dossiers",
       "tag": "Aucun tag trouvé",
-      "calendar": "Aucune donnée calendrier",
-      "location": "Aucune donnée lieu",
-      "person": "Aucune donnée personne",
-      "person_hint": "Essayez d'indexer les visages",
-      "camera": "Aucune donnée appareil"
+      "tag_hint": "Ajoutez des tags à vos fichiers pour les voir ici",
+      "calendar": "Aucun élément de calendrier trouvé",
+      "calendar_hint": "Ajoutez des photos avec une date de prise de vue pour les voir ici",
+      "location": "Aucun lieu trouvé",
+      "location_hint": "Ajoutez des photos avec des données de localisation pour les voir ici",
+      "person": "Aucune personne trouvée",
+      "person_hint": "Indexez les visages dans Albums pour voir les personnes ici",
+      "camera": "Aucun appareil trouvé",
+      "camera_hint": "Ajoutez des photos avec des métadonnées d'appareil pour les voir ici"
     },
     "set_album_cover": {
       "success": "Couverture définie",
@@ -281,16 +288,16 @@
     },
     "copy_image": {
       "success": "Image copiée",
-      "failed": "Échec copie image"
+      "failed": "Impossible de copier l'image. Format non pris en charge ou fichier corrompu."
     },
     "save_image": {
       "success": "Image enregistrée",
       "save_as_success": "Image enregistrée comme nouveau fichier",
-      "failed": "Échec enregistrement"
+      "failed": "Impossible d'enregistrer l'image. Format non pris en charge ou fichier corrompu."
     },
     "update_image": {
       "success": "Image mise à jour",
-      "failed": "Échec mise à jour"
+      "failed": "Impossible de mettre à jour l'image depuis le fichier. Le fichier n'existe peut-être pas."
     },
     "image_viewer": {
       "first_image": "Première image",
@@ -440,7 +447,7 @@
       "content": "Supprimer '{library}' ? Le fichier sera effacé.",
       "ok": "Supprimer",
       "success": "'{library}' supprimée.",
-      "error": "Impossible de supprimer."
+      "error": "Impossible de supprimer la bibliothèque."
     },
     "remove_album": {
       "title": "Supprimer album",
@@ -451,86 +458,86 @@
       "title": "Renommer dossier",
       "content": "Nouveau nom:",
       "ok": "Renommer",
-      "error": "Impossible de renommer."
+      "error": "Impossible de renommer le dossier."
     },
     "new_folder": {
       "title": "Nouveau dossier",
-      "placeholder": "Nom dossier",
+      "placeholder": "Entrer un nouveau nom de dossier",
       "ok": "Créer",
-      "error": "Impossible de créer."
+      "error": "Impossible de créer le dossier."
     },
     "delete_folder": {
       "title": "Supprimer dossier",
       "content": "'{folder}' et son contenu seront supprimés.",
       "ok": "Supprimer",
       "success": "'{folder}' supprimé.",
-      "error": "Impossible de supprimer."
+      "error": "Impossible de supprimer le dossier. Le dossier n'existe peut-être pas."
     },
     "trash_folder": {
       "title": "Mettre à la corbeille",
       "content": "'{folder}' ira à la corbeille.",
       "ok": "Corbeille",
       "success": "'{folder}' mis à la corbeille.",
-      "error": "Impossible de mettre à la corbeille."
+      "error": "Impossible de mettre le dossier à la corbeille. Le dossier n'existe peut-être pas."
     },
     "move_to": {
       "title": "Déplacer '{source}' vers",
       "content": "Choisir destination:",
       "ok": "Déplacer",
-      "error": "Impossible de déplacer."
+      "error": "Impossible de déplacer '{source}' vers '{dest}'."
     },
     "copy_to": {
       "title": "Copier '{source}' vers",
       "content": "Choisir destination:",
       "ok": "Copier",
-      "error": "Impossible de copier."
+      "error": "Impossible de copier '{source}' vers '{dest}'."
     },
     "rename_file": {
       "title": "Renommer fichier",
-      "placeholder": "Nouveau nom",
+      "placeholder": "Entrer un nouveau nom de fichier",
       "ok": "Renommer",
-      "error": "Impossible de renommer."
+      "error": "Impossible de renommer le fichier."
     },
     "delete_file": {
       "title": "Supprimer fichier",
       "content": "'{file}' sera supprimé.",
       "ok": "Supprimer",
       "success": "'{file}' supprimé.",
-      "error": "Impossible de supprimer."
+      "error": "Impossible de supprimer le fichier. Le fichier n'existe peut-être pas."
     },
     "delete_files": {
       "title": "Supprimer fichiers",
       "content": "{count} fichiers seront supprimés.",
       "ok": "Supprimer tout",
       "success": "{count} fichiers supprimés.",
-      "error": "Impossible de supprimer."
+      "error": "Impossible de supprimer les fichiers sélectionnés. Les fichiers n'existent peut-être pas."
     },
     "trash_file": {
       "title": "Mettre à la corbeille",
       "content": "'{file}' ira à la corbeille.",
       "ok": "Corbeille",
       "success": "'{file}' mis à la corbeille.",
-      "error": "Impossible de mettre à la corbeille."
+      "error": "Impossible de mettre le fichier à la corbeille. Le fichier n'existe peut-être pas."
     },
     "trash_files": {
       "title": "Mettre à la corbeille",
       "content": "{count} fichiers iront à la corbeille.",
       "ok": "Corbeille",
       "success": "{count} fichiers mis à la corbeille.",
-      "error": "Impossible de mettre à la corbeille."
+      "error": "Impossible de mettre les fichiers sélectionnés à la corbeille. Les fichiers n'existent peut-être pas."
     },
     "new_tag": {
       "title": "Nouveau tag",
       "content": "Nom tag:",
       "ok": "Créer",
-      "error": "Impossible de créer."
+      "error": "Impossible de créer le tag."
     },
     "delete_tag": {
       "title": "Supprimer tag",
       "content": "'{tag}' sera supprimé.",
       "ok": "Supprimer",
       "success": "'{tag}' supprimé.",
-      "error": "Impossible de supprimer."
+      "error": "Impossible de supprimer le tag. Le tag n'existe peut-être pas."
     },
     "edit_comment": {
       "title": "Modifier commentaire",
@@ -590,8 +597,8 @@
       "crop_shape_custom": "Perso",
       "crop_shape_landscape": "Paysage",
       "crop_shape_portrait": "Portrait",
-      "crop_hint": "Activez le mode recadrage pour choisir un format et cadrer l'image finale.",
-      "crop_applied_hint": "Recadrage appliqué. Cliquez sur Restaurer pour revoir ou ajuster la zone sélectionnée.",
+      "crop_hint": "Activez le mode recadrage pour choisir un format et cadrer l'image.",
+      "crop_applied_hint": "Recadrage appliqué. Cliquez sur Restaurer pour le revoir ou l'ajuster.",
       "zoom": "Zoom",
       "aspect_ratio": "Ratio",
       "zoom_in": "Zoom in",
@@ -714,7 +721,7 @@
     "title": "Visionneuse",
     "loading": "Chargement...",
     "loading_original": "Chargement de l’image originale...",
-    "failed": "Échec chargement.",
+    "failed": "Impossible de charger l'image. Le fichier est manquant ou corrompu.",
     "toolbar": {
       "prev": "Précédent",
       "next": "Suivant",
@@ -812,7 +819,7 @@
       "show_tool_tip": "Conseils des boutons",
       "show_status_bar": "Barre d'état",
       "show_map": "Afficher carte",
-      "show_map_hint": "Requiert internet",
+      "show_map_hint": "Nécessite un accès à internet",
       "debug_mode": "Mode débogage"
     },
     "grid_view": {
@@ -872,7 +879,7 @@
       ],
       "auto_play_video": "Lecture auto vidéo",
       "show_comment": "Afficher commentaire",
-      "show_comment_hint": "Afficher les commentaires dans la fenêtre du visualiseur",
+      "show_comment_hint": "Afficher les commentaires dans le visualiseur",
       "external_image_editor": "Ouvrir l'image avec",
       "external_video_app": "Ouvrir la vidéo avec",
       "external_app_not_selected": "Aucune app selectionnee",
@@ -896,7 +903,7 @@
       "title": "Recherche img",
       "section_search": "Recherche",
       "similarity": "Similitude",
-      "similarity_hint": "Élevé = Moins de résultats",
+      "similarity_hint": "Plus élevé = plus similaire, moins de résultats. Plus bas = moins similaire, plus de résultats",
       "similarity_options": [
         "Très élevée",
         "Élevée",
@@ -907,10 +914,10 @@
     "face_recognition": {
       "title": "Reconnaissance faciale",
       "enable": "Activer la reconnaissance faciale",
-      "beta_hint": "Bêta : fonctionnalité encore en développement",
+      "beta_hint": "Bêta : encore en développement",
       "similarity": "Similitude visage",
       "cluster_threshold": "Seuil regroupement",
-      "cluster_threshold_hint": "Élevé = Strict",
+      "cluster_threshold_hint": "Plus élevé = plus strict, plus de personnes. Plus bas = plus souple, peut fusionner des personnes différentes",
       "cluster_threshold_options": [
         "Très élevé",
         "Élevé",
@@ -922,7 +929,7 @@
       "title": "Confidentialite",
       "section_usage": "Statistiques d'utilisation anonymes",
       "enable_analytics": "Partager des statistiques d'utilisation anonymes",
-      "enable_analytics_hint": "Aide a ameliorer la stabilite et l'experience utilisateur de Lap.",
+      "enable_analytics_hint": "Aide à améliorer la stabilité et l'expérience utilisateur de Lap",
       "section_collected": "Informations partagees",
       "collected_intro": "Lap utilise Aptabase, un service d'analyse pour applications respectueux de la vie privee. Les evenements sont anonymes et n'incluent ni vos photos, ni les chemins de fichiers, ni des identifiants personnels. Lorsqu'elle est activee, Lap envoie uniquement :",
       "collected_activity": "Compteurs anonymes d'activite de l'application",

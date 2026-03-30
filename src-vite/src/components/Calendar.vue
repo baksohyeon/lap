@@ -15,61 +15,61 @@
       </div>
     </div>
 
-    <template v-if="Object.keys(calendar_dates).length > 0" >
-      <div class="sidebar-panel-header">
-        <div role="tablist" class="sidebar-header-tabs">
-          <button
-            role="tab"
-            :class="['sidebar-header-tab', { 'tab-active': config.calendar.isMonthly }]"
-            @click="switchToMonthlyView()"
-          >
-            {{ localeMsg.menu.calendar.monthly }}
-          </button>
-          <button
-            role="tab"
-            :class="['sidebar-header-tab', { 'tab-active': !config.calendar.isMonthly }]"
-            @click="switchToDailyView()"
-          >
-            {{ localeMsg.menu.calendar.daily }}
-          </button>
-        </div>
-        <ContextMenu :menuItems="calendarMenuItems" :iconMenu="IconMore" :smallIcon="true" />
+    <!-- calendar tabs -->
+    <div class="sidebar-panel-header">
+      <div role="tablist" class="sidebar-header-tabs">
+        <button
+          role="tab"
+          :class="['sidebar-header-tab', { 'tab-active': config.calendar.isMonthly }]"
+          @click="switchToMonthlyView()"
+        >
+          {{ localeMsg.menu.calendar.monthly }}
+        </button>
+        <button
+          role="tab"
+          :class="['sidebar-header-tab', { 'tab-active': !config.calendar.isMonthly }]"
+          @click="switchToDailyView()"
+        >
+          {{ localeMsg.menu.calendar.daily }}
+        </button>
       </div>
-      <!-- calendar -->
-      <div ref="scrollable"
-        class="flex-1 flex flex-col overflow-x-hidden overflow-y-auto"
-      >
-        <div v-if="!config.calendar.isMonthly" class="mx-auto min-w-48 rounded-box border border-transparent">
-          <div class="px-2 pb-1 grid grid-cols-7 gap-2 text-center text-[11px] font-semibold text-base-content/30">
-            <div v-for="(weekday, idx) in weekdayLabels" :key="`weekday-${idx}`" class="size-6 flex items-center justify-center">
-              {{ weekday }}
-            </div>
+      <ContextMenu :menuItems="calendarMenuItems" :iconMenu="IconMore" :smallIcon="true" />
+    </div>
+
+    <!-- calendar -->
+    <div ref="scrollable" v-if="Object.keys(calendar_dates).length > 0"
+      class="flex-1 flex flex-col overflow-x-hidden overflow-y-auto"
+    >
+      <div v-if="!config.calendar.isMonthly" class="mx-auto min-w-48 rounded-box border border-transparent">
+        <div class="px-2 pb-1 grid grid-cols-7 gap-2 text-center text-[11px] font-semibold text-base-content/30">
+          <div v-for="(weekday, idx) in weekdayLabels" :key="`weekday-${idx}`" class="size-6 flex items-center justify-center">
+            {{ weekday }}
           </div>
         </div>
-        <div v-for="item in sorted_calendar_items" 
-          :key="item.year"
-          :class="[
-            'flex min-w-48',
-            config.calendar.sortingAsc ? 'flex-col' : 'flex-col-reverse'
-          ]"
-        >
-          <CalendarMonthly v-if="config.calendar.isMonthly"
-            :year="Number(item.year)" 
-            :months="item.months"
-          />
-          <CalendarDaily v-else v-for="(dates, month) in item.months" 
-            :year="Number(item.year)" 
-            :month="Number(month)"
-            :dates="dates"
-          />
-        </div>
       </div>
-    </template>
+      <div v-for="item in sorted_calendar_items" 
+        :key="item.year"
+        :class="[
+          'flex min-w-48',
+          config.calendar.sortingAsc ? 'flex-col' : 'flex-col-reverse'
+        ]"
+      >
+        <CalendarMonthly v-if="config.calendar.isMonthly"
+          :year="Number(item.year)" 
+          :months="item.months"
+        />
+        <CalendarDaily v-else v-for="(dates, month) in item.months" 
+          :year="Number(item.year)" 
+          :month="Number(month)"
+          :dates="dates"
+        />
+      </div>
+    </div>
 
-    <!-- Display message if no data are found -->
-    <div v-else class="mt-8 px-2 flex flex-col items-center justify-center text-base-content/30">
-      <IconCalendar class="w-8 h-8 mb-2" />
-      <span class="text-sm text-center">{{ $t('tooltip.not_found.calendar') }}</span>
+    <div v-else class="mt-2 px-2 flex flex-col items-center justify-center text-base-content/30">
+      <!-- <IconCalendar class="w-8 h-8 mb-2" /> -->
+      <!-- <span class="text-sm text-center">{{ $t('tooltip.not_found.calendar') }}</span> -->
+      <span class="text-sm text-center">{{ $t('tooltip.not_found.calendar_hint') }}</span>
     </div>
   </div>
   

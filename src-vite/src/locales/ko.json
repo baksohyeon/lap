@@ -41,8 +41,8 @@
     "filename_search": "파일 이름",
     "image_search_placeholder": "텍스트로 이미지 검색",
     "image_search_history": "검색 기록",
-    "image_search_tips": "검색할 내용을 입력하세요. 예: \"바다 위의 일몰\"",
-    "similar_images_tips": "이미지를 선택하여 유사한 이미지 찾기",
+    "image_search_tips": "설명을 입력해 이미지를 검색하세요",
+    "similar_images_tips": "이미지를 선택해 비슷한 항목을 찾으세요",
     "filename_search_tips": "파일 이름 입력",
     "index": {
       "wait_index": "스캔 대기 중...",
@@ -76,6 +76,7 @@
     "resume": "인덱싱 재개"
   },
   "favorite": {
+    "tab_favorite": "즐겨찾기",
     "files": "즐겨찾는 파일",
     "folders": "즐겨찾는 폴더",
     "ratings": "평점",
@@ -263,17 +264,23 @@
       "person": "얼굴 인식은 베타 기능이며 결과가 정확하지 않을 수 있습니다."
     },
     "not_found": {
-      "albums": "앨범을 찾을 수 없습니다",
+      "albums": "앨범을 찾을 수 없습니다. 이미지나 비디오가 있는 폴더를 추가하세요",
       "files": "파일을 찾을 수 없습니다",
       "folder_files": "이 폴더에는 파일이 없습니다",
-      "folder_files_hint": "하위 폴더를 확인하세요. Lap은 파일 시스템에서 파일을 직접 읽고 앨범을 자동으로 업데이트합니다.",
+      "folder_files_hint": "하위 폴더를 확인하세요. Lap은 파일 시스템에서 파일을 직접 읽습니다",
       "folders": "폴더를 찾을 수 없습니다",
+      "favorite_folders": "즐겨찾기한 폴더를 찾을 수 없습니다",
+      "favorite_folders_hint": "앨범에서 폴더를 즐겨찾기에 추가하면 여기에서 파일과 하위 폴더를 볼 수 있습니다",
       "tag": "태그를 찾을 수 없습니다",
-      "calendar": "달력 데이터가 없습니다",
-      "location": "위치 데이터가 없습니다",
-      "person": "인물 데이터가 없습니다",
-      "person_hint": "얼굴 인덱싱을 시도해보세요",
-      "camera": "카메라 데이터가 없습니다"
+      "tag_hint": "파일에 태그를 추가하면 여기에 표시됩니다",
+      "calendar": "캘린더 항목을 찾을 수 없습니다",
+      "calendar_hint": "촬영 날짜가 있는 사진을 추가하면 여기에 표시됩니다",
+      "location": "위치를 찾을 수 없습니다",
+      "location_hint": "위치 정보가 있는 사진을 추가하면 여기에 표시됩니다",
+      "person": "인물을 찾을 수 없습니다",
+      "person_hint": "앨범에서 얼굴을 인덱싱하면 여기에서 인물을 볼 수 있습니다",
+      "camera": "카메라를 찾을 수 없습니다",
+      "camera_hint": "카메라 메타데이터가 있는 사진을 추가하면 여기에 표시됩니다"
     },
     "set_album_cover": {
       "success": "앨범 커버 설정 완료",
@@ -281,16 +288,16 @@
     },
     "copy_image": {
       "success": "이미지 복사됨",
-      "failed": "이미지 복사 실패"
+      "failed": "이미지를 복사하지 못했습니다. 지원되지 않는 형식이거나 파일이 손상되었습니다."
     },
     "save_image": {
       "success": "이미지 저장됨",
       "save_as_success": "이미지가 새 파일로 저장됨",
-      "failed": "이미지 저장 실패"
+      "failed": "이미지를 저장하지 못했습니다. 지원되지 않는 형식이거나 파일이 손상되었습니다."
     },
     "update_image": {
       "success": "이미지 업데이트됨",
-      "failed": "이미지 업데이트 실패"
+      "failed": "파일에서 이미지를 업데이트하지 못했습니다. 파일이 없을 수 있습니다."
     },
     "image_viewer": {
       "first_image": "첫 번째 이미지입니다",
@@ -440,7 +447,7 @@
       "content": "'{library}'을(를) 제거하시겠습니까? 데이터베이스 파일이 삭제됩니다.",
       "ok": "제거",
       "success": "'{library}' 제거됨.",
-      "error": "제거 실패."
+      "error": "라이브러리를 제거하지 못했습니다."
     },
     "remove_album": {
       "title": "앨범 제거",
@@ -451,86 +458,86 @@
       "title": "폴더 이름 변경",
       "content": "새 폴더 이름:",
       "ok": "변경",
-      "error": "변경 실패."
+      "error": "폴더 이름을 변경하지 못했습니다."
     },
     "new_folder": {
       "title": "새 폴더",
-      "placeholder": "폴더 이름",
+      "placeholder": "새 폴더 이름을 입력하세요",
       "ok": "생성",
-      "error": "생성 실패."
+      "error": "폴더를 만들지 못했습니다."
     },
     "delete_folder": {
       "title": "폴더 삭제",
       "content": "'{folder}' 및 모든 내용이 삭제됩니다.",
       "ok": "삭제",
       "success": "'{folder}' 삭제됨.",
-      "error": "삭제 실패."
+      "error": "폴더를 삭제하지 못했습니다. 폴더가 없을 수 있습니다."
     },
     "trash_folder": {
       "title": "휴지통으로 이동",
       "content": "'{folder}'을(를) 휴지통으로 이동합니다.",
       "ok": "휴지통",
       "success": "'{folder}' 휴지통으로 이동됨.",
-      "error": "이동 실패."
+      "error": "폴더를 휴지통으로 이동하지 못했습니다. 폴더가 없을 수 있습니다."
     },
     "move_to": {
       "title": "'{source}' 이동",
       "content": "대상 폴더 선택:",
       "ok": "이동",
-      "error": "이동 실패."
+      "error": "'{source}'을(를) '{dest}'(으)로 이동하지 못했습니다."
     },
     "copy_to": {
       "title": "'{source}' 복사",
       "content": "대상 폴더 선택:",
       "ok": "복사",
-      "error": "복사 실패."
+      "error": "'{source}'을(를) '{dest}'(으)로 복사하지 못했습니다."
     },
     "rename_file": {
       "title": "파일 이름 변경",
-      "placeholder": "새 파일 이름",
+      "placeholder": "새 파일 이름을 입력하세요",
       "ok": "변경",
-      "error": "변경 실패."
+      "error": "파일 이름을 변경하지 못했습니다."
     },
     "delete_file": {
       "title": "파일 삭제",
       "content": "'{file}'이(가) 삭제됩니다.",
       "ok": "삭제",
       "success": "'{file}' 삭제됨.",
-      "error": "삭제 실패."
+      "error": "파일을 삭제하지 못했습니다. 파일이 없을 수 있습니다."
     },
     "delete_files": {
       "title": "파일 삭제",
       "content": "{count}개의 파일이 삭제됩니다.",
       "ok": "모두 삭제",
       "success": "{count}개 파일 삭제됨.",
-      "error": "삭제 실패."
+      "error": "선택한 파일을 삭제하지 못했습니다. 파일이 없을 수 있습니다."
     },
     "trash_file": {
       "title": "휴지통으로 이동",
       "content": "'{file}'을(를) 휴지통으로 이동합니다.",
       "ok": "휴지통",
       "success": "'{file}' 휴지통으로 이동됨.",
-      "error": "이동 실패."
+      "error": "파일을 휴지통으로 이동하지 못했습니다. 파일이 없을 수 있습니다."
     },
     "trash_files": {
       "title": "휴지통으로 이동",
       "content": "{count}개의 파일을 휴지통으로 이동합니다.",
       "ok": "휴지통",
       "success": "{count}개 파일 휴지통으로 이동됨.",
-      "error": "이동 실패."
+      "error": "선택한 파일을 휴지통으로 이동하지 못했습니다. 파일이 없을 수 있습니다."
     },
     "new_tag": {
       "title": "새 태그",
       "content": "태그 이름:",
       "ok": "생성",
-      "error": "생성 실패."
+      "error": "태그를 만들지 못했습니다."
     },
     "delete_tag": {
       "title": "태그 삭제",
       "content": "'{tag}' 태그가 삭제됩니다.",
       "ok": "삭제",
       "success": "'{tag}' 삭제됨.",
-      "error": "삭제 실패."
+      "error": "태그를 삭제하지 못했습니다. 태그가 없을 수 있습니다."
     },
     "edit_comment": {
       "title": "코멘트 편집",
@@ -590,8 +597,8 @@
       "crop_shape_custom": "사용자 지정",
       "crop_shape_landscape": "가로",
       "crop_shape_portrait": "세로",
-      "crop_hint": "자르기 모드를 시작해 화면비를 고르고 최종 이미지를 프레이밍하세요.",
-      "crop_applied_hint": "자르기가 적용되었습니다. \"복구\"를 클릭하면 선택한 영역을 검토하거나 조정할 수 있습니다.",
+      "crop_hint": "자르기 모드를 시작해 화면비를 고르고 이미지를 프레이밍하세요.",
+      "crop_applied_hint": "자르기가 적용되었습니다. \"복원\"을 눌러 검토하거나 조정할 수 있습니다.",
       "zoom": "확대/축소",
       "aspect_ratio": "비율",
       "zoom_in": "확대",
@@ -714,7 +721,7 @@
     "title": "이미지 뷰어",
     "loading": "로딩 중...",
     "loading_original": "원본 이미지를 불러오는 중...",
-    "failed": "로딩 실패.",
+    "failed": "이미지를 불러오지 못했습니다. 파일이 없거나 손상되었습니다.",
     "toolbar": {
       "prev": "이전",
       "next": "다음",
@@ -812,7 +819,7 @@
       "show_tool_tip": "버튼 팁 표시",
       "show_status_bar": "상태 표시줄",
       "show_map": "지도 표시",
-      "show_map_hint": "인터넷 필요",
+      "show_map_hint": "인터넷 연결이 필요합니다",
       "debug_mode": "디버그 모드"
     },
     "grid_view": {
@@ -872,7 +879,7 @@
       ],
       "auto_play_video": "비디오 자동 재생",
       "show_comment": "코멘트 표시",
-      "show_comment_hint": "뷰어 창에 댓글 표시",
+      "show_comment_hint": "뷰어에 댓글 표시",
       "external_image_editor": "이미지 열기 앱",
       "external_video_app": "동영상 열기 앱",
       "external_app_not_selected": "선택된 앱이 없습니다",
@@ -896,7 +903,7 @@
       "title": "이미지 검색",
       "section_search": "검색",
       "similarity": "유사도",
-      "similarity_hint": "높음 = 결과 적음",
+      "similarity_hint": "높을수록 더 비슷하고 결과가 적습니다. 낮을수록 덜 비슷하고 결과가 많습니다",
       "similarity_options": [
         "매우 높음",
         "높음",
@@ -907,10 +914,10 @@
     "face_recognition": {
       "title": "얼굴 인식",
       "enable": "얼굴 인식 활성화",
-      "beta_hint": "베타: 기능은 아직 개발 중입니다",
+      "beta_hint": "베타: 아직 개발 중입니다",
       "similarity": "얼굴 유사도",
       "cluster_threshold": "클러스터 임계값",
-      "cluster_threshold_hint": "높음 = 엄격함",
+      "cluster_threshold_hint": "높을수록 더 엄격해 인물이 많아집니다. 낮을수록 더 느슨해 다른 사람이 합쳐질 수 있습니다",
       "cluster_threshold_options": [
         "매우 높음",
         "높음",
@@ -922,7 +929,7 @@
       "title": "개인정보",
       "section_usage": "익명 사용 통계",
       "enable_analytics": "익명 사용 통계 공유",
-      "enable_analytics_hint": "Lap 의 안정성과 사용자 경험을 개선하는 데 도움이 됩니다.",
+      "enable_analytics_hint": "Lap의 안정성과 사용자 경험 개선에 도움이 됩니다",
       "section_collected": "공유 정보",
       "collected_intro": "Lap 은 앱용 개인정보 보호 중심 분석 서비스인 Aptabase 를 사용합니다. 이벤트는 익명이며 사진, 파일 경로, 개인 식별자를 포함하지 않습니다. 활성화하면 Lap 은 다음만 전송합니다:",
       "collected_activity": "익명 앱 활동 카운터",

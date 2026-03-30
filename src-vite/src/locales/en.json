@@ -21,7 +21,7 @@
       "select_folder": "Select a folder",
       "name": "Name",
       "description": "Description",
-      "description_placeholder": "Enter album's description",
+      "description_placeholder": "Enter album description",
       "images": "Images",
       "videos": "Videos",
       "files_count": "{count} files ({size})",
@@ -41,8 +41,8 @@
     "filename_search": "Filename",
     "image_search_placeholder": "Search images by text",
     "image_search_history": "Search History",
-    "image_search_tips": "Enter a description to search images. For example, type \"sunset over the ocean\" to find relevant images.",
-    "similar_images_tips": "Select an image to find similar images",
+    "image_search_tips": "Enter a description to search images",
+    "similar_images_tips": "Select an image to find similar ones",
     "filename_search_tips": "Enter a filename to search",
     "index": {
       "wait_index": "Wait for scan...",
@@ -76,6 +76,7 @@
     "resume": "Resume Indexing"
   },
   "favorite": {
+    "tab_favorite": "Favorite",
     "files": "Favorite files",
     "folders": "Favorite folders",
     "ratings": "Ratings",
@@ -263,17 +264,23 @@
       "person": "Face recognition is in beta and may be inaccurate."
     },
     "not_found": {
-      "albums": "No albums found. Try to add an existing folder which contains images or videos",
+      "albums": "No albums found. Add a folder with images or videos",
       "files": "No files found",
       "folder_files": "This folder has no files",
-      "folder_files_hint": "Try a subfolder. Lap reads files directly from the file system and updates the album automatically.",
+      "folder_files_hint": "Try a subfolder. Lap reads files directly from the file system",
       "folders": "No folders found",
+      "favorite_folders": "No favorite folders found",
+      "favorite_folders_hint": "Favorite a folder in Albums to see its files, including subfolders",
       "tag": "No tags found",
-      "calendar": "No calendar data found",
-      "location": "No location data found",
-      "person": "No person data found",
-      "person_hint": "Try to index the faces in the albums",
-      "camera": "No camera data found"
+      "tag_hint": "Add tags to your files to see them here",
+      "calendar": "No calendar items found",
+      "calendar_hint": "Add photos with capture dates to see them here",
+      "location": "No locations found",
+      "location_hint": "Add photos with location data to see them here",
+      "person": "No people found",
+      "person_hint": "Index faces in Albums to see people here",
+      "camera": "No cameras found",
+      "camera_hint": "Add photos with camera metadata to see them here"
     },
     "set_album_cover": {
       "success": "Album cover set successfully",
@@ -281,16 +288,16 @@
     },
     "copy_image": {
       "success": "Image copied to clipboard",
-      "failed": "Failed to copy image to clipboard. Unsupported format or file is corrupted."
+      "failed": "Failed to copy image. Unsupported format or corrupted file."
     },
     "save_image": {
       "success": "The image has been saved",
       "save_as_success": "The image has been saved as a new file",
-      "failed": "Cannot save the image. Unsupported format or file is corrupted."
+      "failed": "Failed to save image. Unsupported format or corrupted file."
     },
     "update_image": {
       "success": "The image has been updated from the file",
-      "failed": "Failed to update the image from the file. The file may not exist."
+      "failed": "Failed to update image from file. The file may not exist."
     },
     "image_viewer": {
       "first_image": "Already the first image",
@@ -440,7 +447,7 @@
       "content": "Are you sure you want to remove '{library}'? This will permanently delete the database file.",
       "ok": "Remove",
       "success": "The library '{library}' has been removed.",
-      "error": "Cannot remove the library."
+      "error": "Failed to remove library."
     },
     "remove_album": {
       "title": "Remove album",
@@ -451,86 +458,86 @@
       "title": "Rename folder",
       "content": "Enter the new name for the folder:",
       "ok": "Rename",
-      "error": "Cannot rename the folder."
+      "error": "Failed to rename folder."
     },
     "new_folder": {
       "title": "New folder",
-      "placeholder": "Enter new folder name",
+      "placeholder": "Enter a new folder name",
       "ok": "Create",
-      "error": "Cannot create new folder."
+      "error": "Failed to create folder."
     },
     "delete_folder": {
       "title": "Delete folder",
       "content": "The folder '{folder}' and all its contents will be deleted.",
       "ok": "Delete",
       "success": "The folder '{folder}' has been deleted.",
-      "error": "Cannot delete the folder. The folder may not exist."
+      "error": "Failed to delete folder. The folder may not exist."
     },
     "trash_folder": {
       "title": "Move to trash",
       "content": "The folder '{folder}' will be trashed.",
       "ok": "Trash",
       "success": "The folder '{folder}' has been trashed.",
-      "error": "Cannot trash the folder. The folder may not exist."
+      "error": "Failed to move folder to Trash. The folder may not exist."
     },
     "move_to": {
       "title": "Move '{source}' to",
       "content": "Select the destination folder:",
       "ok": "Move",
-      "error": "Cannot move '{source}' to '{dest}'."
+      "error": "Failed to move '{source}' to '{dest}'."
     },
     "copy_to": {
       "title": "Copy '{source}' to",
       "content": "Select the destination folder:",
       "ok": "Copy",
-      "error": "Cannot copy '{source}' to '{dest}'."
+      "error": "Failed to copy '{source}' to '{dest}'."
     },
     "rename_file": {
       "title": "Rename file",
-      "placeholder": "Enter new file name",
+      "placeholder": "Enter a new file name",
       "ok": "Rename",
-      "error": "Cannot rename the file."
+      "error": "Failed to rename file."
     },
     "delete_file": {
       "title": "Delete file",
       "content": "The file '{file}' will be deleted.",
       "ok": "Delete",
       "success": "The file '{file}' has been deleted.",
-      "error": "Cannot delete the file. The file may not exist."
+      "error": "Failed to delete file. The file may not exist."
     },
     "delete_files": {
       "title": "Delete files",
       "content": "{count} selected files will be deleted.",
       "ok": "Delete all",
       "success": "{count} selected files have been deleted.",
-      "error": "Cannot delete the selected files. The files may not exist."
+      "error": "Failed to delete selected files. The files may not exist."
     },
     "trash_file": {
       "title": "Move to trash",
       "content": "The file '{file}' will be trashed.",
       "ok": "Trash",
       "success": "The file '{file}' has been trashed.",
-      "error": "Cannot trash the file. The file may not exist."
+      "error": "Failed to move file to Trash. The file may not exist."
     },
     "trash_files": {
       "title": "Move to trash",
       "content": "{count} selected files will be trashed.",
       "ok": "Trash all",
       "success": "{count} selected files have been trashed.",
-      "error": "Cannot trash the selected files. The files may not exist."
+      "error": "Failed to move selected files to Trash. The files may not exist."
     },
     "new_tag": {
       "title": "New tag",
       "content": "Enter the name for the new tag:",
       "ok": "Create",
-      "error": "Cannot create new tag."
+      "error": "Failed to create tag."
     },
     "delete_tag": {
       "title": "Delete tag",
       "content": "The tag '{tag}' will be deleted.",
       "ok": "Delete",
       "success": "The tag '{tag}' has been deleted.",
-      "error": "Cannot delete the tag. The tag may not exist."
+      "error": "Failed to delete tag. The tag may not exist."
     },
     "edit_comment": {
       "title": "Edit comment",
@@ -590,8 +597,8 @@
       "crop_shape_custom": "Custom",
       "crop_shape_landscape": "Landscape",
       "crop_shape_portrait": "Portrait",
-      "crop_hint": "Start crop mode to pick an aspect ratio and frame the final image.",
-      "crop_applied_hint": "Crop applied. Click Restore to review or adjust the selected area.",
+      "crop_hint": "Start crop mode to choose an aspect ratio and frame the image.",
+      "crop_applied_hint": "Crop applied. Click Restore to review or adjust it.",
       "zoom": "Zoom",
       "aspect_ratio": "Aspect ratio",
       "zoom_in": "Zoom in",
@@ -714,7 +721,7 @@
     "title": "Image viewer",
     "loading": "Loading...",
     "loading_original": "Loading original image...",
-    "failed": "Failed to load image. No such file or file is corrupted.",
+    "failed": "Failed to load image. The file is missing or corrupted.",
     "toolbar": {
       "prev": "Previous",
       "next": "Next",
@@ -740,11 +747,11 @@
     "loading": "Loading video...",
     "failed": "Video could not be played",
     "errors": {
-      "aborted": "Video loading was aborted",
-      "network": "Network error caused video download to fail",
+      "aborted": "Video loading was canceled",
+      "network": "Network error while loading video",
       "decode": "Video decoding error",
-      "format": "Video format not supported or file is corrupted",
-      "timeout": "Video loading timeout, video format not supported or file is corrupted",
+      "format": "Unsupported video format or corrupted file",
+      "timeout": "Video loading timed out. Unsupported format or corrupted file",
       "unknown": "Unknown error"
     }
   },
@@ -812,7 +819,7 @@
       "show_tool_tip": "Show button tips",
       "show_status_bar": "Show status bar",
       "show_map": "Show map",
-      "show_map_hint": "Requires network access",
+      "show_map_hint": "Requires internet access",
       "debug_mode": "Debug mode"
     },
     "grid_view": {
@@ -848,7 +855,7 @@
     "filmstrip_view": {
       "title": "Filmstrip view",
       "preview_position": "Preview position",
-      "preview_position_hint": "Only applies when FilmStrip View is enabled",
+      "preview_position_hint": "Only applies when Filmstrip view is enabled",
       "preview_position_options": [
         "Above thumbnails",
         "Below thumbnails"
@@ -872,7 +879,7 @@
       ],
       "auto_play_video": "Auto play video",
       "show_comment": "Show comments",
-      "show_comment_hint": "Show comments in the viewer window",
+      "show_comment_hint": "Show comments in the viewer",
       "external_image_editor": "Open image in",
       "external_video_app": "Open video in",
       "external_app_not_selected": "No app selected",
@@ -896,7 +903,7 @@
       "title": "Image search",
       "section_search": "Search",
       "similarity": "Image similarity",
-      "similarity_hint": "Higher = More similar (less results), Lower = Less similar (more results)",
+      "similarity_hint": "Higher = more similar, fewer results. Lower = less similar, more results",
       "similarity_options": [
         "Very high",
         "High",
@@ -907,10 +914,10 @@
     "face_recognition": {
       "title": "Face Recognition",
       "enable": "Enable face recognition",
-      "beta_hint": "Beta: still under development",
+      "beta_hint": "Beta: still in development",
       "similarity": "Face similarity",
       "cluster_threshold": "Clustering threshold",
-      "cluster_threshold_hint": "Higher = Stricter (more persons), Lower = Looser (may merge different people)",
+      "cluster_threshold_hint": "Higher = stricter, more people. Lower = looser, may merge different people",
       "cluster_threshold_options": [
         "Very High (Strict)",
         "High",
@@ -922,7 +929,7 @@
       "title": "Privacy",
       "section_usage": "Anonymous Usage Statistics",
       "enable_analytics": "Share anonymous usage statistics",
-      "enable_analytics_hint": "Helps improve Lap’s stability and user experience.",
+      "enable_analytics_hint": "Helps improve Lap’s stability and user experience",
       "section_collected": "Shared info",
       "collected_intro": "Lap uses Aptabase, a privacy-first analytics service for apps. Events are anonymous and do not include your photos, file paths, or personal identifiers. When enabled, Lap sends only:",
       "collected_activity": "Anonymous app activity counters",
@@ -953,7 +960,7 @@
       },
       "auto_update": {
         "update": "Update",
-        "check": "Check Update",
+        "check": "Check for Updates",
         "checking": "Checking...",
         "install": "Install & Restart",
         "installing": "Installing...",

@@ -41,8 +41,8 @@
     "filename_search": "文件名",
     "image_search_placeholder": "搜索图片内容",
     "image_search_history": "搜索历史",
-    "image_search_tips": "输入描述以搜索图片。例如：输入\"sunset over the ocean\"",
-    "similar_images_tips": "选择一张图片以查找相似图片",
+    "image_search_tips": "输入描述以搜索图片",
+    "similar_images_tips": "选择一张图片以查找相似项",
     "filename_search_tips": "输入文件名进行搜索",
     "index": {
       "wait_index": "等待扫描...",
@@ -76,6 +76,7 @@
     "resume": "继续索引"
   },
   "favorite": {
+    "tab_favorite": "收藏",
     "files": "收藏的文件",
     "folders": "收藏的文件夹",
     "ratings": "评分",
@@ -263,17 +264,23 @@
       "person": "人脸识别仍处于测试阶段，结果可能不准确。"
     },
     "not_found": {
-      "albums": "未找到相册。尝试添加一个包含图片或视频的文件夹",
+      "albums": "未找到相册。添加包含图片或视频的文件夹",
       "files": "未找到文件",
       "folder_files": "此文件夹中没有文件",
-      "folder_files_hint": "请继续查看子文件夹。Lap 会直接读取文件系统中的文件，并自动更新相册。",
+      "folder_files_hint": "试试子文件夹。Lap 会直接读取文件系统中的文件",
       "folders": "未找到文件夹",
+      "favorite_folders": "未找到收藏的文件夹",
+      "favorite_folders_hint": "在相册中收藏一个文件夹，即可在这里查看其文件和子文件夹内容",
       "tag": "未找到标签",
-      "calendar": "未找到日历数据",
-      "location": "未找到地点数据",
-      "person": "未找到人物数据",
-      "person_hint": "尝试索引相册中的人脸",
-      "camera": "未找到相机数据"
+      "tag_hint": "给文件添加标签后，会显示在这里",
+      "calendar": "未找到日历项",
+      "calendar_hint": "添加带拍摄日期的照片后，会显示在这里",
+      "location": "未找到地点",
+      "location_hint": "添加带位置信息的照片后，会显示在这里",
+      "person": "未找到人物",
+      "person_hint": "在相册中索引人脸后，会显示在这里",
+      "camera": "未找到相机",
+      "camera_hint": "添加带相机元数据的照片后，会显示在这里"
     },
     "set_album_cover": {
       "success": "相册封面设置成功",
@@ -281,16 +288,16 @@
     },
     "copy_image": {
       "success": "图片已复制到剪贴板",
-      "failed": "复制图片到剪贴板失败。不支持的格式或文件已损坏。"
+      "failed": "复制图片失败。不支持的格式或文件已损坏。"
     },
     "save_image": {
       "success": "图片已保存",
       "save_as_success": "图片已另存为新文件",
-      "failed": "无法保存图片。不支持的格式或文件已损坏。"
+      "failed": "保存图片失败。不支持的格式或文件已损坏。"
     },
     "update_image": {
       "success": "图片已从文件中更新",
-      "failed": "无法从文件中更新图片。文件可能不存在。"
+      "failed": "从文件更新图片失败。文件可能不存在。"
     },
     "image_viewer": {
       "first_image": "已经是第一张图片",
@@ -440,7 +447,7 @@
       "content": "确定要移除 '{library}' 吗？这将永久删除数据库文件。",
       "ok": "移除",
       "success": "库 '{library}' 已成功移除。",
-      "error": "无法移除库。"
+      "error": "移除库失败。"
     },
     "remove_album": {
       "title": "移除相册",
@@ -451,86 +458,86 @@
       "title": "重命名文件夹",
       "content": "输入文件夹的新名称:",
       "ok": "重命名",
-      "error": "无法重命名文件夹。"
+      "error": "重命名文件夹失败。"
     },
     "new_folder": {
       "title": "新建文件夹",
-      "placeholder": "输入新文件夹的名称",
+      "placeholder": "输入新文件夹名称",
       "ok": "创建",
-      "error": "无法创建新文件夹。"
+      "error": "创建文件夹失败。"
     },
     "delete_folder": {
       "title": "删除文件夹",
       "content": "文件夹 '{folder}' 及其所有内容将被删除。",
       "ok": "删除",
       "success": "文件夹 '{folder}' 已删除。",
-      "error": "无法删除文件夹。文件夹可能不存在。"
+      "error": "删除文件夹失败。文件夹可能不存在。"
     },
     "trash_folder": {
       "title": "移到废纸篓",
       "content": "文件夹 '{folder}' 将被移到废纸篓。",
       "ok": "移到废纸篓",
       "success": "文件夹 '{folder}' 已移到废纸篓。",
-      "error": "无法将文件夹移到废纸篓。文件夹可能不存在。"
+      "error": "将文件夹移到废纸篓失败。文件夹可能不存在。"
     },
     "move_to": {
       "title": "移动 '{source}' 到",
       "content": "选择目标文件夹:",
       "ok": "移动",
-      "error": "无法将 '{source}' 移动到 '{dest}'."
+      "error": "将 '{source}' 移动到 '{dest}' 失败。"
     },
     "copy_to": {
       "title": "复制 '{source}' 到",
       "content": "选择目标文件夹:",
       "ok": "复制",
-      "error": "无法将 '{source}' 复制到 '{dest}'."
+      "error": "将 '{source}' 复制到 '{dest}' 失败。"
     },
     "rename_file": {
       "title": "重命名文件",
       "placeholder": "输入新文件名",
       "ok": "重命名",
-      "error": "无法重命名文件。"
+      "error": "重命名文件失败。"
     },
     "delete_file": {
       "title": "删除文件",
       "content": "文件 '{file}' 将被删除。",
       "ok": "删除",
       "success": "文件 '{file}' 已删除。",
-      "error": "无法删除文件。文件可能不存在。"
+      "error": "删除文件失败。文件可能不存在。"
     },
     "delete_files": {
       "title": "删除文件",
       "content": "{count} 个选择的文件将被删除。",
       "ok": "全部删除",
       "success": "{count} 个选择的文件已删除。",
-      "error": "无法删除选择的文件。文件可能不存在。"
+      "error": "删除所选文件失败。文件可能不存在。"
     },
     "trash_file": {
       "title": "移到废纸篓",
       "content": "文件 '{file}' 将被移到废纸篓。",
       "ok": "移到废纸篓",
       "success": "文件 '{file}' 已移到废纸篓。",
-      "error": "无法将文件移到废纸篓。文件可能不存在。"
+      "error": "将文件移到废纸篓失败。文件可能不存在。"
     },
     "trash_files": {
       "title": "移到废纸篓",
       "content": "{count} 个选择的文件将被移到废纸篓。",
       "ok": "全部移到废纸篓",
       "success": "{count} 个选择的文件已移到废纸篓。",
-      "error": "无法将选择的文件移到废纸篓。文件可能不存在。"
+      "error": "将所选文件移到废纸篓失败。文件可能不存在。"
     },
     "new_tag": {
       "title": "新建标签",
       "content": "输入新标签的名称:",
       "ok": "创建",
-      "error": "无法创建新标签。"
+      "error": "创建标签失败。"
     },
     "delete_tag": {
       "title": "删除标签",
       "content": "标签 '{tag}' 将被删除。",
       "ok": "删除",
       "success": "标签 '{tag}' 已删除。",
-      "error": "无法删除标签。标签可能不存在。"
+      "error": "删除标签失败。标签可能不存在。"
     },
     "edit_comment": {
       "title": "编辑备注",
@@ -590,8 +597,8 @@
       "crop_shape_custom": "自定义",
       "crop_shape_landscape": "横屏",
       "crop_shape_portrait": "竖屏",
-      "crop_hint": "进入裁剪模式后，可以选择宽高比并框定最终画面。",
-      "crop_applied_hint": "裁剪已应用。点击“还原”可重新查看或调整裁剪区域。",
+      "crop_hint": "进入裁剪模式后，可选择宽高比并框定画面。",
+      "crop_applied_hint": "裁剪已应用。点击“还原”可查看或调整。",
       "zoom": "缩放",
       "aspect_ratio": "宽高比",
       "zoom_in": "放大",
@@ -714,7 +721,7 @@
     "title": "图片查看器",
     "loading": "加载中...",
     "loading_original": "加载原图...",
-    "failed": "加载图片失败。文件可能不存在或文件已损坏。",
+    "failed": "加载图片失败。文件不存在或已损坏。",
     "toolbar": {
       "prev": "上一张",
       "next": "下一张",
@@ -812,7 +819,7 @@
       "show_tool_tip": "显示按钮提示",
       "show_status_bar": "显示状态栏",
       "show_map": "显示地图",
-      "show_map_hint": "需要网络访问",
+      "show_map_hint": "需要互联网连接",
       "debug_mode": "调试模式"
     },
     "grid_view": {
@@ -872,7 +879,7 @@
       ],
       "auto_play_video": "自动播放视频",
       "show_comment": "显示备注",
-      "show_comment_hint": "在查看器窗口中显示备注",
+      "show_comment_hint": "在查看器中显示备注",
       "external_image_editor": "打开图片使用",
       "external_video_app": "打开视频使用",
       "external_app_not_selected": "未选择应用",
@@ -896,7 +903,7 @@
       "title": "图片搜索",
       "section_search": "搜索",
       "similarity": "图片相似度",
-      "similarity_hint": "较高 = 更少结果, 较低 = 更多结果",
+      "similarity_hint": "越高越相似，结果越少。越低越不相似，结果越多",
       "similarity_options": [
         "极高",
         "高",
@@ -907,10 +914,10 @@
     "face_recognition": {
       "title": "人脸识别",
       "enable": "启用人脸识别",
-      "beta_hint": "Beta：功能仍在开发中",
+      "beta_hint": "Beta：仍在开发中",
       "similarity": "人脸相似度",
       "cluster_threshold": "聚类阈值",
-      "cluster_threshold_hint": "较高 = 更严格 (更多人物)，较低 = 更宽松 (可能合并不同的人)",
+      "cluster_threshold_hint": "越高越严格，人物更多。越低越宽松，可能合并不同的人",
       "cluster_threshold_options": [
         "极高 (严格)",
         "高",
@@ -922,7 +929,7 @@
       "title": "隐私",
       "section_usage": "匿名使用统计",
       "enable_analytics": "分享匿名使用统计",
-      "enable_analytics_hint": "用于改进 Lap 的稳定性和用户体验。",
+      "enable_analytics_hint": "用于改进 Lap 的稳定性和用户体验",
       "section_collected": "共享信息",
       "collected_intro": "Lap 使用 Aptabase，一款面向应用的隐私优先统计服务。统计事件是匿名的，不包含你的照片、文件路径或个人身份标识。开启后，Lap 只会发送：",
       "collected_activity": "匿名应用活跃计数",

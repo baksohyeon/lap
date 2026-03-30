@@ -41,8 +41,8 @@
     "filename_search": "ファイル名",
     "image_search_placeholder": "テキストで画像を検索",
     "image_search_history": "検索履歴",
-    "image_search_tips": "検索したい内容を入力してください。例：「海に沈む夕日」",
-    "similar_images_tips": "画像を選択して類似画像を検索",
+    "image_search_tips": "説明を入力して画像を検索",
+    "similar_images_tips": "画像を選択して類似する画像を検索",
     "filename_search_tips": "ファイル名を入力して検索",
     "index": {
       "wait_index": "スキャンを待機中...",
@@ -76,6 +76,7 @@
     "resume": "インデックスを再開"
   },
   "favorite": {
+    "tab_favorite": "お気に入り",
     "files": "お気に入りファイル",
     "folders": "お気に入りフォルダー",
     "ratings": "評価",
@@ -263,17 +264,23 @@
       "person": "顔認識はベータ版のため、結果が正確でない場合があります。"
     },
     "not_found": {
-      "albums": "アルバムが見つかりません",
+      "albums": "アルバムが見つかりません。画像や動画を含むフォルダーを追加してください",
       "files": "ファイルが見つかりません",
       "folder_files": "このフォルダーにはファイルがありません",
-      "folder_files_hint": "サブフォルダーを確認してください。Lap はファイルシステムから直接読み取り、アルバムを自動で更新します。",
+      "folder_files_hint": "サブフォルダーを確認してください。Lap はファイルシステムから直接読み取ります",
       "folders": "フォルダーが見つかりません",
+      "favorite_folders": "お気に入りのフォルダーが見つかりません",
+      "favorite_folders_hint": "アルバムでフォルダーをお気に入りに追加すると、ここにそのファイルやサブフォルダーが表示されます",
       "tag": "タグが見つかりません",
-      "calendar": "カレンダーデータがありません",
-      "location": "位置情報データがありません",
-      "person": "人物データがありません",
-      "person_hint": "顔のインデックス作成を試してください",
-      "camera": "カメラデータがありません"
+      "tag_hint": "ファイルにタグを追加すると、ここに表示されます",
+      "calendar": "カレンダー項目が見つかりません",
+      "calendar_hint": "撮影日付きの写真を追加すると、ここに表示されます",
+      "location": "場所が見つかりません",
+      "location_hint": "位置情報付きの写真を追加すると、ここに表示されます",
+      "person": "人物が見つかりません",
+      "person_hint": "アルバムで顔をインデックスすると、ここに人物が表示されます",
+      "camera": "カメラが見つかりません",
+      "camera_hint": "カメラ情報付きの写真を追加すると、ここに表示されます"
     },
     "set_album_cover": {
       "success": "アルバムの表紙を設定しました",
@@ -281,16 +288,16 @@
     },
     "copy_image": {
       "success": "画像をコピーしました",
-      "failed": "画像のコピーに失敗しました"
+      "failed": "画像のコピーに失敗しました。未対応の形式か、ファイルが破損しています。"
     },
     "save_image": {
       "success": "画像を保存しました",
       "save_as_success": "画像を新しいファイルとして保存しました",
-      "failed": "画像の保存に失敗しました"
+      "failed": "画像の保存に失敗しました。未対応の形式か、ファイルが破損しています。"
     },
     "update_image": {
       "success": "画像を更新しました",
-      "failed": "画像の更新に失敗しました"
+      "failed": "ファイルから画像を更新できませんでした。ファイルが存在しない可能性があります。"
     },
     "image_viewer": {
       "first_image": "最初の画像です",
@@ -440,7 +447,7 @@
       "content": "'{library}' を削除しますか？データベースファイルも削除されます。",
       "ok": "削除",
       "success": "'{library}' を削除しました。",
-      "error": "削除できませんでした。"
+      "error": "ライブラリを削除できませんでした。"
     },
     "remove_album": {
       "title": "アルバムを削除",
@@ -451,86 +458,86 @@
       "title": "フォルダー名を変更",
       "content": "新しいフォルダー名:",
       "ok": "変更",
-      "error": "変更できませんでした。"
+      "error": "フォルダー名を変更できませんでした。"
     },
     "new_folder": {
       "title": "新しいフォルダー",
-      "placeholder": "フォルダー名",
+      "placeholder": "新しいフォルダー名を入力",
       "ok": "作成",
-      "error": "作成できませんでした。"
+      "error": "フォルダーを作成できませんでした。"
     },
     "delete_folder": {
       "title": "フォルダーを削除",
       "content": "'{folder}' とその中身をすべて削除します。",
       "ok": "削除",
       "success": "'{folder}' を削除しました。",
-      "error": "削除できませんでした。"
+      "error": "フォルダーを削除できませんでした。フォルダーが存在しない可能性があります。"
     },
     "trash_folder": {
       "title": "ゴミ箱に移動",
       "content": "'{folder}' をゴミ箱に移動します。",
       "ok": "移動",
       "success": "'{folder}' をゴミ箱に移動しました。",
-      "error": "移動できませんでした。"
+      "error": "フォルダーをゴミ箱に移動できませんでした。フォルダーが存在しない可能性があります。"
     },
     "move_to": {
       "title": "'{source}' を移動",
       "content": "移動先を選択:",
       "ok": "移動",
-      "error": "移動できませんでした。"
+      "error": "'{source}' を '{dest}' に移動できませんでした。"
     },
     "copy_to": {
       "title": "'{source}' をコピー",
       "content": "コピー先を選択:",
       "ok": "コピー",
-      "error": "コピーできませんでした。"
+      "error": "'{source}' を '{dest}' にコピーできませんでした。"
     },
     "rename_file": {
       "title": "ファイル名を変更",
-      "placeholder": "新しいファイル名",
+      "placeholder": "新しいファイル名を入力",
       "ok": "変更",
-      "error": "変更できませんでした。"
+      "error": "ファイル名を変更できませんでした。"
     },
     "delete_file": {
       "title": "ファイルを削除",
       "content": "'{file}' を削除します。",
       "ok": "削除",
       "success": "'{file}' を削除しました。",
-      "error": "削除できませんでした。"
+      "error": "ファイルを削除できませんでした。ファイルが存在しない可能性があります。"
     },
     "delete_files": {
       "title": "ファイルを削除",
       "content": "{count} 個のファイルを削除します。",
       "ok": "すべて削除",
       "success": "{count} 個のファイルを削除しました。",
-      "error": "削除できませんでした。"
+      "error": "選択したファイルを削除できませんでした。ファイルが存在しない可能性があります。"
     },
     "trash_file": {
       "title": "ゴミ箱に移動",
       "content": "'{file}' をゴミ箱に移動します。",
       "ok": "移動",
       "success": "'{file}' をゴミ箱に移動しました。",
-      "error": "移動できませんでした。"
+      "error": "ファイルをゴミ箱に移動できませんでした。ファイルが存在しない可能性があります。"
     },
     "trash_files": {
       "title": "ゴミ箱に移動",
       "content": "{count} 個のファイルをゴミ箱に移動します。",
       "ok": "移動",
       "success": "{count} 個のファイルをゴミ箱に移動しました。",
-      "error": "移動できませんでした。"
+      "error": "選択したファイルをゴミ箱に移動できませんでした。ファイルが存在しない可能性があります。"
     },
     "new_tag": {
       "title": "新しいタグ",
       "content": "タグ名:",
       "ok": "作成",
-      "error": "作成できませんでした。"
+      "error": "タグを作成できませんでした。"
     },
     "delete_tag": {
       "title": "タグを削除",
       "content": "'{tag}' を削除します。",
       "ok": "削除",
       "success": "'{tag}' を削除しました。",
-      "error": "削除できませんでした。"
+      "error": "タグを削除できませんでした。タグが存在しない可能性があります。"
     },
     "edit_comment": {
       "title": "コメントを編集",
@@ -590,8 +597,8 @@
       "crop_shape_custom": "カスタム",
       "crop_shape_landscape": "横",
       "crop_shape_portrait": "縦",
-      "crop_hint": "切り抜きモードを開始して、アスペクト比を選び、最終的な範囲を決めます。",
-      "crop_applied_hint": "切り抜きが適用されました。「元に戻す」を押すと、範囲を確認または調整できます。",
+      "crop_hint": "切り抜きモードを開始し、アスペクト比を選んで範囲を決めます。",
+      "crop_applied_hint": "切り抜きが適用されました。「元に戻す」で確認または調整できます。",
       "zoom": "ズーム",
       "aspect_ratio": "アスペクト比",
       "zoom_in": "拡大",
@@ -714,7 +721,7 @@
     "title": "画像ビューア",
     "loading": "読み込み中...",
     "loading_original": "元画像を読み込み中...",
-    "failed": "読み込みに失敗しました。",
+    "failed": "画像を読み込めませんでした。ファイルが見つからないか、破損しています。",
     "toolbar": {
       "prev": "前へ",
       "next": "次へ",
@@ -872,7 +879,7 @@
       ],
       "auto_play_video": "動画自動再生",
       "show_comment": "コメントを表示",
-      "show_comment_hint": "ビューアウィンドウにコメントを表示",
+      "show_comment_hint": "ビューアにコメントを表示",
       "external_image_editor": "画像を開くアプリ",
       "external_video_app": "動画を開くアプリ",
       "external_app_not_selected": "アプリが選択されていません",
@@ -896,7 +903,7 @@
       "title": "画像検索",
       "section_search": "検索",
       "similarity": "類似度",
-      "similarity_hint": "高い = 結果が少ない",
+      "similarity_hint": "高いほど類似度が高く、結果は少なくなります。低いほど類似度が低く、結果は多くなります",
       "similarity_options": [
         "非常に高い",
         "高い",
@@ -907,10 +914,10 @@
     "face_recognition": {
       "title": "顔認識",
       "enable": "顔認識を有効化",
-      "beta_hint": "ベータ版: 機能は現在開発中です",
+      "beta_hint": "ベータ版: まだ開発中です",
       "similarity": "顔類似度",
       "cluster_threshold": "クラスタしきい値",
-      "cluster_threshold_hint": "高い = 厳しい",
+      "cluster_threshold_hint": "高いほど厳しく、人物数が増えます。低いほど緩く、別人をまとめる場合があります",
       "cluster_threshold_options": [
         "非常に高い",
         "高い",
@@ -922,7 +929,7 @@
       "title": "プライバシー",
       "section_usage": "匿名利用統計",
       "enable_analytics": "匿名利用統計を共有する",
-      "enable_analytics_hint": "Lap の安定性とユーザー体験の向上に役立ちます。",
+      "enable_analytics_hint": "Lap の安定性とユーザー体験の向上に役立ちます",
       "section_collected": "共有情報",
       "collected_intro": "Lap は、アプリ向けのプライバシー重視の分析サービス Aptabase を利用します。イベントは匿名で送信され、写真、ファイルパス、個人識別子は含まれません。有効にすると、Lap は次のみを送信します：",
       "collected_activity": "匿名のアプリ利用カウンター",

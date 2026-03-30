@@ -7,7 +7,7 @@
           :class="['sidebar-header-tab', activeTab === 'favorite' ? 'tab-active' : '']"
           @click="setActiveTab('favorite')"
         >
-          {{ $t('favorite.files') }}
+          {{ $t('favorite.tab_favorite') }}
         </button>
         <button
           role="tab"
@@ -34,11 +34,11 @@
         <span v-if="favoriteFilesCount" class="sidebar-item-count">{{ favoriteFilesCount.toLocaleString() }}</span>
       </div>
 
-      <div v-if="favorite_folders.length > 0" class="sidebar-panel-header">
+      <div class="sidebar-panel-header">
         <span class="sidebar-panel-header-title">{{ $t('favorite.folders') }}</span>
       </div>
       <div class="grow overflow-x-hidden overflow-y-auto">
-        <ul>
+        <ul v-if="favorite_folders.length > 0">
           <li v-for="folder in favorite_folders" :key="folder.id">
             <div
               :class="[
@@ -63,6 +63,11 @@
             </div>
           </li>
         </ul>
+        <div v-else class="mt-2 px-2 flex flex-col items-center justify-center text-base-content/30"> 
+          <!-- <IconFolderFavorite class="w-8 h-8 mb-2" /> -->
+          <!-- <span class="text-sm text-center">{{ $t('tooltip.not_found.favorite_folders') }}</span> -->
+          <span class="text-sm text-center">{{ $t('tooltip.not_found.favorite_folders_hint') }}</span>
+        </div>
       </div>
     </div>
 
@@ -177,7 +182,7 @@ async function loadCounts() {
 
 onMounted(() => {
   if ((libConfig.favorite as any).tab !== 'favorite' && (libConfig.favorite as any).tab !== 'rating') {
-    (libConfig.favorite as any).tab = 'favorite';
+    (libConfig.favorite as any).tab = libConfig.favorite.rating !== null ? 'rating' : 'favorite';
   }
   void loadCounts();
 });
@@ -235,10 +240,6 @@ function clickFavoriteFiles() {
   libConfig.favorite.rating = null;
 }
 
-if (libConfig.favorite.folderId !== 0) {
-  clickFavoriteFiles();
-}
-
 function clickRating(rating: number) {
   (libConfig.favorite as any).tab = 'rating';
   libConfig.favorite.albumId = null;
@@ -247,16 +248,12 @@ function clickRating(rating: number) {
   libConfig.favorite.rating = rating;
 }
 
-if (libConfig.favorite.folderId !== 0 || libConfig.favorite.rating !== null) {
-  (libConfig.favorite as any).tab = 'rating';
-} else {
-  clickFavoriteFiles();
-}
-
 function clickFavoriteFolder(folder: any) {
+  (libConfig.favorite as any).tab = 'favorite';
   libConfig.favorite.albumId = folder.album_id;
   libConfig.favorite.folderId = folder.id;
   libConfig.favorite.folderPath = folder.path;
+  libConfig.favorite.rating = null;
 }
 function UnFavorite() {
   setFolderFavorite(libConfig.favorite.folderId, false).then(() => {

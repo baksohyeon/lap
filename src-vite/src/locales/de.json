@@ -21,7 +21,7 @@
       "select_folder": "Ordner wählen",
       "name": "Name",
       "description": "Beschreibung",
-      "description_placeholder": "Beschreibung eingeben",
+      "description_placeholder": "Albumbeschreibung eingeben",
       "images": "Bilder",
       "videos": "Videos",
       "files_count": "{count} Dateien ({size})",
@@ -41,8 +41,8 @@
     "filename_search": "Dateiname",
     "image_search_placeholder": "Nach Text suchen",
     "image_search_history": "Suchverlauf",
-    "image_search_tips": "Geben Sie eine Beschreibung ein. Z.B. \"Sonnenuntergang am Meer\".",
-    "similar_images_tips": "Wählen Sie ein Bild für ähnliche Bilder",
+    "image_search_tips": "Geben Sie eine Beschreibung ein, um Bilder zu suchen",
+    "similar_images_tips": "Wählen Sie ein Bild, um ähnliche zu finden",
     "filename_search_tips": "Dateinamen eingeben",
     "index": {
       "wait_index": "Warte auf Scan...",
@@ -76,6 +76,7 @@
     "resume": "Fortsetzen"
   },
   "favorite": {
+    "tab_favorite": "Favoriten",
     "files": "Favorisierte Dateien",
     "folders": "Favorisierte Ordner",
     "ratings": "Bewertungen",
@@ -263,17 +264,23 @@
       "person": "Die Gesichtserkennung ist noch im Beta-Stadium und kann ungenau sein."
     },
     "not_found": {
-      "albums": "Keine Alben gefunden",
+      "albums": "Keine Alben gefunden. Fügen Sie einen Ordner mit Bildern oder Videos hinzu",
       "files": "Keine Dateien gefunden",
       "folder_files": "Dieser Ordner enthält keine Dateien",
-      "folder_files_hint": "Versuchen Sie einen Unterordner. Lap liest Dateien direkt aus dem Dateisystem und aktualisiert das Album automatisch.",
+      "folder_files_hint": "Versuchen Sie einen Unterordner. Lap liest Dateien direkt aus dem Dateisystem",
       "folders": "Keine Ordner gefunden",
+      "favorite_folders": "Keine Favoritenordner gefunden",
+      "favorite_folders_hint": "Favorisieren Sie einen Ordner in Alben, um hier seine Dateien und Unterordner zu sehen",
       "tag": "Keine Tags gefunden",
-      "calendar": "Keine Kalenderdaten",
-      "location": "Keine Ortsdaten",
-      "person": "Keine Personendaten",
-      "person_hint": "Versuchen Sie Gesichter zu indexieren",
-      "camera": "Keine Kameradaten"
+      "tag_hint": "Fügen Sie Ihren Dateien Tags hinzu, damit sie hier angezeigt werden",
+      "calendar": "Keine Kalendereinträge gefunden",
+      "calendar_hint": "Fügen Sie Fotos mit Aufnahmedatum hinzu, damit sie hier angezeigt werden",
+      "location": "Keine Orte gefunden",
+      "location_hint": "Fügen Sie Fotos mit Standortdaten hinzu, damit sie hier angezeigt werden",
+      "person": "Keine Personen gefunden",
+      "person_hint": "Indizieren Sie Gesichter in Alben, damit sie hier angezeigt werden",
+      "camera": "Keine Kameras gefunden",
+      "camera_hint": "Fügen Sie Fotos mit Kameradaten hinzu, damit sie hier angezeigt werden"
     },
     "set_album_cover": {
       "success": "Cover gesetzt",
@@ -281,16 +288,16 @@
     },
     "copy_image": {
       "success": "Bild kopiert",
-      "failed": "Fehler beim Kopieren"
+      "failed": "Bild konnte nicht kopiert werden. Nicht unterstütztes Format oder beschädigte Datei."
     },
     "save_image": {
       "success": "Bild gespeichert",
       "save_as_success": "Bild als neue Datei gespeichert",
-      "failed": "Fehler beim Speichern"
+      "failed": "Bild konnte nicht gespeichert werden. Nicht unterstütztes Format oder beschädigte Datei."
     },
     "update_image": {
       "success": "Bild aktualisiert",
-      "failed": "Fehler beim Aktualisieren"
+      "failed": "Bild konnte nicht aus der Datei aktualisiert werden. Die Datei existiert möglicherweise nicht."
     },
     "image_viewer": {
       "first_image": "Erstes Bild",
@@ -440,7 +447,7 @@
       "content": "'{library}' entfernen? Datenbankdatei wird gelöscht.",
       "ok": "Entfernen",
       "success": "'{library}' entfernt.",
-      "error": "Entfernen fehlgeschlagen."
+      "error": "Bibliothek konnte nicht entfernt werden."
     },
     "remove_album": {
       "title": "Album entfernen",
@@ -451,86 +458,86 @@
       "title": "Ordner umbenennen",
       "content": "Neuer Name:",
       "ok": "Umbenennen",
-      "error": "Fehler beim Umbenennen."
+      "error": "Ordner konnte nicht umbenannt werden."
     },
     "new_folder": {
       "title": "Neuer Ordner",
-      "placeholder": "Ordnername",
+      "placeholder": "Neuen Ordnernamen eingeben",
       "ok": "Erstellen",
-      "error": "Fehler beim Erstellen."
+      "error": "Ordner konnte nicht erstellt werden."
     },
     "delete_folder": {
       "title": "Ordner löschen",
       "content": "'{folder}' und Inhalt werden gelöscht.",
       "ok": "Löschen",
       "success": "'{folder}' gelöscht.",
-      "error": "Fehler beim Löschen."
+      "error": "Ordner konnte nicht gelöscht werden. Der Ordner existiert möglicherweise nicht."
     },
     "trash_folder": {
       "title": "In Papierkorb",
       "content": "'{folder}' wird in den Papierkorb verschoben.",
       "ok": "Papierkorb",
       "success": "'{folder}' in Papierkorb.",
-      "error": "Fehler beim Verschieben."
+      "error": "Ordner konnte nicht in den Papierkorb verschoben werden. Der Ordner existiert möglicherweise nicht."
     },
     "move_to": {
       "title": "Verschiebe '{source}' nach",
       "content": "Zielordner wählen:",
       "ok": "Verschieben",
-      "error": "Fehler beim Verschieben."
+      "error": "'{source}' konnte nicht nach '{dest}' verschoben werden."
     },
     "copy_to": {
       "title": "Kopiere '{source}' nach",
       "content": "Zielordner wählen:",
       "ok": "Kopieren",
-      "error": "Fehler beim Kopieren."
+      "error": "'{source}' konnte nicht nach '{dest}' kopiert werden."
     },
     "rename_file": {
       "title": "Datei umbenennen",
-      "placeholder": "Neuer Name",
+      "placeholder": "Neuen Dateinamen eingeben",
       "ok": "Umbenennen",
-      "error": "Fehler beim Umbenennen."
+      "error": "Datei konnte nicht umbenannt werden."
     },
     "delete_file": {
       "title": "Datei löschen",
       "content": "'{file}' wird gelöscht.",
       "ok": "Löschen",
       "success": "'{file}' gelöscht.",
-      "error": "Fehler beim Löschen."
+      "error": "Datei konnte nicht gelöscht werden. Die Datei existiert möglicherweise nicht."
     },
     "delete_files": {
       "title": "Dateien löschen",
       "content": "{count} Dateien werden gelöscht.",
       "ok": "Alle löschen",
       "success": "{count} Dateien gelöscht.",
-      "error": "Fehler beim Löschen."
+      "error": "Ausgewählte Dateien konnten nicht gelöscht werden. Die Dateien existieren möglicherweise nicht."
     },
     "trash_file": {
       "title": "In Papierkorb",
       "content": "'{file}' wird in den Papierkorb verschoben.",
       "ok": "Papierkorb",
       "success": "'{file}' in Papierkorb.",
-      "error": "Fehler beim Verschieben."
+      "error": "Datei konnte nicht in den Papierkorb verschoben werden. Die Datei existiert möglicherweise nicht."
     },
     "trash_files": {
       "title": "In Papierkorb",
       "content": "{count} Dateien werden in den Papierkorb verschoben.",
       "ok": "Papierkorb",
       "success": "{count} Dateien in Papierkorb.",
-      "error": "Fehler beim Verschieben."
+      "error": "Ausgewählte Dateien konnten nicht in den Papierkorb verschoben werden. Die Dateien existieren möglicherweise nicht."
     },
     "new_tag": {
       "title": "Neuer Tag",
       "content": "Tag-Name:",
       "ok": "Erstellen",
-      "error": "Fehler beim Erstellen."
+      "error": "Tag konnte nicht erstellt werden."
     },
     "delete_tag": {
       "title": "Tag löschen",
       "content": "'{tag}' wird gelöscht.",
       "ok": "Löschen",
       "success": "'{tag}' gelöscht.",
-      "error": "Fehler beim Löschen."
+      "error": "Tag konnte nicht gelöscht werden. Der Tag existiert möglicherweise nicht."
     },
     "edit_comment": {
       "title": "Kommentar bearbeiten",
@@ -590,8 +597,8 @@
       "crop_shape_custom": "Benutzerdef.",
       "crop_shape_landscape": "Landschaft",
       "crop_shape_portrait": "Porträt",
-      "crop_hint": "Starten Sie den Zuschneidemodus, um ein Seitenverhältnis zu wählen und den finalen Bildausschnitt festzulegen.",
-      "crop_applied_hint": "Der Zuschnitt wurde angewendet. Klicken Sie auf „Wiederherstellen“, um den ausgewählten Bereich zu prüfen oder anzupassen.",
+      "crop_hint": "Starten Sie den Zuschneidemodus, um ein Seitenverhältnis zu wählen und das Bild auszurichten.",
+      "crop_applied_hint": "Zuschnitt angewendet. Klicken Sie auf „Wiederherstellen“, um ihn zu prüfen oder anzupassen.",
       "zoom": "Zoom",
       "aspect_ratio": "Seitenverhältnis",
       "zoom_in": "Zoom +",
@@ -714,7 +721,7 @@
     "title": "Bildbetrachter",
     "loading": "Lade...",
     "loading_original": "Originalbild wird geladen...",
-    "failed": "Fehler beim Laden.",
+    "failed": "Bild konnte nicht geladen werden. Die Datei fehlt oder ist beschädigt.",
     "toolbar": {
       "prev": "Vorheriges",
       "next": "Nächstes",
@@ -812,7 +819,7 @@
       "show_tool_tip": "Button-Hinweise",
       "show_status_bar": "Statusleiste",
       "show_map": "Karte anzeigen",
-      "show_map_hint": "Benötigt Internet",
+      "show_map_hint": "Benötigt Internetzugang",
       "debug_mode": "Debug-Modus"
     },
     "grid_view": {
@@ -872,7 +879,7 @@
       ],
       "auto_play_video": "Video Autoplay",
       "show_comment": "Kommentar zeigen",
-      "show_comment_hint": "Kommentare im Betrachterfenster anzeigen",
+      "show_comment_hint": "Kommentare im Betrachter anzeigen",
       "external_image_editor": "Bild öffnen mit",
       "external_video_app": "Video öffnen mit",
       "external_app_not_selected": "Keine App ausgewählt",
@@ -896,7 +903,7 @@
       "title": "Bildsuche",
       "section_search": "Suche",
       "similarity": "Ähnlichkeit",
-      "similarity_hint": "Hoch = Weniger Ergebnisse",
+      "similarity_hint": "Höher = ähnlicher, weniger Ergebnisse. Niedriger = weniger ähnlich, mehr Ergebnisse",
       "similarity_options": [
         "Sehr hoch",
         "Hoch",
@@ -907,10 +914,10 @@
     "face_recognition": {
       "title": "Gesichtserkennung",
       "enable": "Gesichtserkennung aktivieren",
-      "beta_hint": "Beta: Funktion ist noch in Entwicklung",
+      "beta_hint": "Beta: noch in Entwicklung",
       "similarity": "Gesichtsähnlichkeit",
       "cluster_threshold": "Cluster-Schwellenwert",
-      "cluster_threshold_hint": "Hoch = Strikt",
+      "cluster_threshold_hint": "Höher = strenger, mehr Personen. Niedriger = lockerer, kann verschiedene Personen zusammenführen",
       "cluster_threshold_options": [
         "Sehr hoch",
         "Hoch",
@@ -922,7 +929,7 @@
       "title": "Datenschutz",
       "section_usage": "Anonyme Nutzungsstatistik",
       "enable_analytics": "Anonyme Nutzungsstatistik teilen",
-      "enable_analytics_hint": "Hilft, die Stabilitaet und die Nutzererfahrung von Lap zu verbessern.",
+      "enable_analytics_hint": "Hilft, die Stabilität und Nutzererfahrung von Lap zu verbessern",
       "section_collected": "Geteilte Informationen",
       "collected_intro": "Lap verwendet Aptabase, einen datenschutzfreundlichen Analysedienst fuer Apps. Die Ereignisse sind anonym und enthalten weder Ihre Fotos noch Dateipfade oder persoenliche Kennungen. Wenn aktiviert, sendet Lap nur:",
       "collected_activity": "Anonyme Aktivitätszähler der App",

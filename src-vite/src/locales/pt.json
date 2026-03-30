@@ -21,7 +21,7 @@
       "select_folder": "Selecionar pasta",
       "name": "Nome",
       "description": "Descrição",
-      "description_placeholder": "Digite a descrição",
+      "description_placeholder": "Digite a descrição do álbum",
       "images": "Imagens",
       "videos": "Vídeos",
       "files_count": "{count} arquivos ({size})",
@@ -41,8 +41,8 @@
     "filename_search": "Nome do arquivo",
     "image_search_placeholder": "Pesquisar imagens por texto",
     "image_search_history": "Histórico",
-    "image_search_tips": "Digite uma descrição. Ex: \"pôr do sol no oceano\".",
-    "similar_images_tips": "Selecione uma imagem para encontrar semelhantes",
+    "image_search_tips": "Digite uma descrição para buscar imagens",
+    "similar_images_tips": "Selecione uma imagem para encontrar imagens semelhantes",
     "filename_search_tips": "Digite um nome de arquivo",
     "index": {
       "wait_index": "Aguardando escaneamento...",
@@ -76,6 +76,7 @@
     "resume": "Retomar"
   },
   "favorite": {
+    "tab_favorite": "Favoritos",
     "files": "Arquivos favoritos",
     "folders": "Pastas favoritas",
     "ratings": "Classificações",
@@ -263,17 +264,23 @@
       "person": "O reconhecimento facial está em beta e pode não ser preciso."
     },
     "not_found": {
-      "albums": "Nenhum álbum encontrado",
+      "albums": "Nenhum álbum encontrado. Adicione uma pasta com imagens ou vídeos",
       "files": "Nenhum arquivo encontrado",
       "folder_files": "Esta pasta não contém arquivos",
-      "folder_files_hint": "Tente uma subpasta. O Lap lê os arquivos diretamente do sistema e atualiza o álbum automaticamente.",
+      "folder_files_hint": "Tente uma subpasta. O Lap lê os arquivos diretamente do sistema",
       "folders": "Nenhuma pasta encontrada",
-      "tag": "Nenhuma tag encontrada",
-      "calendar": "Sem dados de calendário",
-      "location": "Sem dados de localização",
-      "person": "Sem dados de pessoa",
-      "person_hint": "Tente indexar os rostos",
-      "camera": "Sem dados de câmera"
+      "favorite_folders": "Nenhuma pasta favorita encontrada",
+      "favorite_folders_hint": "Favorite uma pasta em Álbuns para ver aqui seus arquivos e subpastas",
+      "tag": "Nenhuma etiqueta encontrada",
+      "tag_hint": "Adicione etiquetas aos seus arquivos para vê-las aqui",
+      "calendar": "Nenhum item de calendário encontrado",
+      "calendar_hint": "Adicione fotos com data de captura para vê-las aqui",
+      "location": "Nenhuma localização encontrada",
+      "location_hint": "Adicione fotos com dados de localização para vê-las aqui",
+      "person": "Nenhuma pessoa encontrada",
+      "person_hint": "Indexe rostos em Álbuns para ver pessoas aqui",
+      "camera": "Nenhuma câmera encontrada",
+      "camera_hint": "Adicione fotos com metadados da câmera para vê-las aqui"
     },
     "set_album_cover": {
       "success": "Capa definida",
@@ -281,16 +288,16 @@
     },
     "copy_image": {
       "success": "Imagem copiada",
-      "failed": "Falha ao copiar"
+      "failed": "Falha ao copiar a imagem. Formato não suportado ou arquivo corrompido."
     },
     "save_image": {
       "success": "Imagem salva",
       "save_as_success": "Imagem salva como novo arquivo",
-      "failed": "Falha ao salvar"
+      "failed": "Falha ao salvar a imagem. Formato não suportado ou arquivo corrompido."
     },
     "update_image": {
       "success": "Imagem atualizada",
-      "failed": "Falha ao atualizar"
+      "failed": "Falha ao atualizar a imagem a partir do arquivo. O arquivo pode não existir."
     },
     "image_viewer": {
       "first_image": "Primeira imagem",
@@ -440,7 +447,7 @@
       "content": "Remover '{library}'? O arquivo do banco de dados será excluído.",
       "ok": "Remover",
       "success": "'{library}' removida.",
-      "error": "Falha ao remover."
+      "error": "Falha ao remover a biblioteca."
     },
     "remove_album": {
       "title": "Remover álbum",
@@ -451,86 +458,86 @@
       "title": "Renomear pasta",
       "content": "Novo nome:",
       "ok": "Renomear",
-      "error": "Falha ao renomear."
+      "error": "Falha ao renomear a pasta."
     },
     "new_folder": {
       "title": "Nova pasta",
-      "placeholder": "Nome da pasta",
+      "placeholder": "Digite um novo nome de pasta",
       "ok": "Criar",
-      "error": "Falha ao criar."
+      "error": "Falha ao criar a pasta."
     },
     "delete_folder": {
       "title": "Excluir pasta",
       "content": "'{folder}' e conteúdo serão excluídos.",
       "ok": "Excluir",
       "success": "'{folder}' excluída.",
-      "error": "Falha ao excluir."
+      "error": "Falha ao excluir a pasta. A pasta pode não existir."
     },
     "trash_folder": {
       "title": "Mover para lixeira",
       "content": "'{folder}' irá para a lixeira.",
       "ok": "Lixeira",
       "success": "'{folder}' movida para a lixeira.",
-      "error": "Falha ao mover."
+      "error": "Falha ao mover a pasta para a lixeira. A pasta pode não existir."
     },
     "move_to": {
       "title": "Mover '{source}' para",
       "content": "Selecione o destino:",
       "ok": "Mover",
-      "error": "Falha ao mover."
+      "error": "Falha ao mover '{source}' para '{dest}'."
     },
     "copy_to": {
       "title": "Copiar '{source}' para",
       "content": "Selecione o destino:",
       "ok": "Copiar",
-      "error": "Falha ao copiar."
+      "error": "Falha ao copiar '{source}' para '{dest}'."
     },
     "rename_file": {
       "title": "Renomear arquivo",
-      "placeholder": "Novo nome",
+      "placeholder": "Digite um novo nome de arquivo",
       "ok": "Renomear",
-      "error": "Falha ao renomear."
+      "error": "Falha ao renomear o arquivo."
     },
     "delete_file": {
       "title": "Excluir arquivo",
       "content": "O arquivo '{file}' será excluído.",
       "ok": "Excluir",
       "success": "'{file}' excluído.",
-      "error": "Falha ao excluir."
+      "error": "Falha ao excluir o arquivo. O arquivo pode não existir."
     },
     "delete_files": {
       "title": "Excluir arquivos",
       "content": "{count} arquivos serão excluídos.",
       "ok": "Excluir tudo",
       "success": "{count} arquivos excluídos.",
-      "error": "Falha ao excluir."
+      "error": "Falha ao excluir os arquivos selecionados. Os arquivos podem não existir."
     },
     "trash_file": {
       "title": "Mover para lixeira",
       "content": "O arquivo '{file}' irá para a lixeira.",
       "ok": "Lixeira",
       "success": "'{file}' na lixeira.",
-      "error": "Falha ao mover."
+      "error": "Falha ao mover o arquivo para a lixeira. O arquivo pode não existir."
     },
     "trash_files": {
       "title": "Mover para lixeira",
       "content": "{count} arquivos irão para a lixeira.",
       "ok": "Lixeira",
       "success": "{count} arquivos na lixeira.",
-      "error": "Falha ao mover."
+      "error": "Falha ao mover os arquivos selecionados para a lixeira. Os arquivos podem não existir."
     },
     "new_tag": {
       "title": "Nova tag",
       "content": "Nome da tag:",
       "ok": "Criar",
-      "error": "Falha ao criar."
+      "error": "Falha ao criar a tag."
     },
     "delete_tag": {
       "title": "Excluir tag",
       "content": "A tag '{tag}' será excluída.",
       "ok": "Excluir",
       "success": "'{tag}' excluída.",
-      "error": "Falha ao excluir."
+      "error": "Falha ao excluir a tag. A tag pode não existir."
     },
     "edit_comment": {
       "title": "Editar comentário",
@@ -590,8 +597,8 @@
       "crop_shape_custom": "Personalizado",
       "crop_shape_landscape": "Paisagem",
       "crop_shape_portrait": "Retrato",
-      "crop_hint": "Inicie o modo de corte para escolher uma proporção e enquadrar a imagem final.",
-      "crop_applied_hint": "Corte aplicado. Clique em Restaurar para revisar ou ajustar a área selecionada.",
+      "crop_hint": "Inicie o modo de corte para escolher uma proporção e enquadrar a imagem.",
+      "crop_applied_hint": "Corte aplicado. Clique em Restaurar para revisar ou ajustar.",
       "zoom": "Zoom",
       "aspect_ratio": "Proporção",
       "zoom_in": "Zoom in",
@@ -714,7 +721,7 @@
     "title": "Visualizador",
     "loading": "Carregando...",
     "loading_original": "Carregando imagem original...",
-    "failed": "Falha ao carregar.",
+    "failed": "Falha ao carregar a imagem. O arquivo está ausente ou corrompido.",
     "toolbar": {
       "prev": "Anterior",
       "next": "Próximo",
@@ -812,7 +819,7 @@
       "show_tool_tip": "Dicas dos botões",
       "show_status_bar": "Barra de status",
       "show_map": "Mostrar mapa",
-      "show_map_hint": "Requer internet",
+      "show_map_hint": "Requer acesso à internet",
       "debug_mode": "Modo debug"
     },
     "grid_view": {
@@ -872,7 +879,7 @@
       ],
       "auto_play_video": "Auto reproduzir vídeo",
       "show_comment": "Mostrar comentário",
-      "show_comment_hint": "Mostrar comentários na janela do visualizador",
+      "show_comment_hint": "Mostrar comentários no visualizador",
       "external_image_editor": "Abrir imagem com",
       "external_video_app": "Abrir vídeo com",
       "external_app_not_selected": "Nenhum app selecionado",
@@ -896,7 +903,7 @@
       "title": "Pesquisa img",
       "section_search": "Pesquisa",
       "similarity": "Similaridade",
-      "similarity_hint": "Alto = Menos resultados",
+      "similarity_hint": "Mais alto = mais similar, menos resultados. Mais baixo = menos similar, mais resultados",
       "similarity_options": [
         "Muito alta",
         "Alta",
@@ -907,10 +914,10 @@
     "face_recognition": {
       "title": "Reconhecimento facial",
       "enable": "Ativar reconhecimento facial",
-      "beta_hint": "Beta: recurso ainda em desenvolvimento",
+      "beta_hint": "Beta: ainda em desenvolvimento",
       "similarity": "Similaridade facial",
       "cluster_threshold": "Limite de cluster",
-      "cluster_threshold_hint": "Alto = Rígido",
+      "cluster_threshold_hint": "Mais alto = mais rígido, mais pessoas. Mais baixo = mais solto, pode juntar pessoas diferentes",
       "cluster_threshold_options": [
         "Muito alto",
         "Alto",
@@ -922,7 +929,7 @@
       "title": "Privacidade",
       "section_usage": "Estatisticas de uso anonimas",
       "enable_analytics": "Compartilhar estatisticas de uso anonimas",
-      "enable_analytics_hint": "Ajuda a melhorar a estabilidade e a experiencia do utilizador no Lap.",
+      "enable_analytics_hint": "Ajuda a melhorar a estabilidade e a experiência do utilizador no Lap",
       "section_collected": "Informacoes compartilhadas",
       "collected_intro": "Lap usa o Aptabase, um servico de analise para aplicativos com foco em privacidade. Os eventos sao anonimos e nao incluem suas fotos, caminhos de arquivos nem identificadores pessoais. Quando ativado, o Lap envia apenas:",
       "collected_activity": "Contadores anonimos de atividade do aplicativo",

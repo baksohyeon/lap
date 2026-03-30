@@ -39,19 +39,19 @@
     </div>
 
     <div class="sidebar-panel-header">
-      <div class="flex items-center gap-2">
-        <span class="sidebar-panel-header-title">{{ localeMsg.sidebar.people }}</span>
-        <div
-          ref="betaBadgeRef"
-          class="relative"
-          @mouseenter="showBetaTooltip"
-          @mouseleave="hideBetaTooltip"
+      <div role="tablist" class="sidebar-header-tabs">
+        <button
+          role="tab"
+          :class="['sidebar-header-tab', activeTab === 'people' ? 'tab-active' : '']"
+          @click="activeTab = 'people'"
         >
-          <span class="px-1.5 h-5 inline-flex items-center rounded-box text-[10px] font-semibold tracking-[0.08em] text-warning border border-warning/30 bg-warning/10 cursor-default">
-            BETA
-          </span>
-        </div>
+          {{ localeMsg.sidebar.people }}
+        </button>
+        <span class="px-1.5 h-5 inline-flex items-center rounded-box text-[10px] font-semibold tracking-[0.08em] text-warning border border-warning/30 bg-warning/10 cursor-default">
+          BETA
+        </span>
       </div>
+
       <ContextMenu :menuItems="personPanelMenuItems" :iconMenu="IconMore" :smallIcon="true" />
     </div>
 
@@ -113,19 +113,19 @@
     </div>
 
     <!-- No Persons Found Message -->
-    <div v-else-if="!isIndexing" class="mt-8 px-2 flex flex-col items-center justify-center text-base-content/30">
-      <IconPerson class="w-8 h-8 mb-2" />
+    <div v-else-if="!isIndexing" class="mt-2 px-2 flex flex-col items-center justify-center text-base-content/30">
+      <!-- <IconPerson class="w-8 h-8 mb-2" /> -->
       <template v-if="incompleteCount > 0">
          <span class="text-sm text-center">{{ $t('face_index.incomplete', { count: incompleteCount.toLocaleString() }) }}</span>
-         <button class="btn btn-primary btn-sm mt-4" @click="clickIndexFaces">
+         <button class="btn btn-primary btn-sm mt-4 rounded-box" @click="clickIndexFaces">
           <IconUpdate class="w-4 h-4" />
           {{ $t('face_index.resume') }}
         </button>
       </template>
       <template v-else>
-        <span class="text-sm text-center">{{ $t('tooltip.not_found.person') }}</span>
-        <span class="text-xs text-center mt-1">{{ $t('tooltip.not_found.person_hint') }}</span>
-        <button class="btn btn-primary btn-sm mt-4" @click="clickIndexFaces">
+        <!-- <span class="text-sm text-center">{{ $t('tooltip.not_found.person') }}</span> -->
+        <span class="text-sm text-center">{{ $t('tooltip.not_found.person_hint') }}</span>
+        <button class="btn btn-primary btn-sm mt-4 rounded-box" @click="clickIndexFaces">
           <IconUpdate class="w-4 h-4" />
           {{ $t('face_index.start') }}
         </button>
@@ -202,6 +202,10 @@ const emit = defineEmits(['editDataChanged']);
 /// i18n
 const { locale, messages } = useI18n();
 const localeMsg = computed(() => messages.value[locale.value] as any);
+
+
+//tabs
+const activeTab = ref<'people' | 'album'>('people');
 
 // persons
 const allPersons = ref<any[]>([]);

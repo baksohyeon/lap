@@ -34,6 +34,15 @@ pub fn install_app_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         .separator()
         .quit()
         .build()?;
+    let edit_submenu = SubmenuBuilder::new(app, "Edit")
+        .undo()
+        .redo()
+        .separator()
+        .cut()
+        .copy()
+        .paste()
+        .select_all()
+        .build()?;
     let window_submenu = SubmenuBuilder::new(app, "Window")
         .minimize()
         .maximize_with_text("Zoom")
@@ -50,6 +59,7 @@ pub fn install_app_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         .build()?;
     let menu = MenuBuilder::new(app)
         .item(&app_submenu)
+        .item(&edit_submenu)
         .item(&window_submenu)
         .item(&help_submenu)
         .build()?;

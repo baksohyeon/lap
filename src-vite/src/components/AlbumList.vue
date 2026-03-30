@@ -137,10 +137,10 @@
     </ul>
 
     <!-- No Albums Found Message -->
-    <div v-else-if="!isLoading && !isEditList" class="mt-8 px-2 flex flex-col items-center justify-center gap-2 text-base-content/30">
-      <span class="text-center">{{ $t('album.no_albums.title') }}</span>
+    <div v-else-if="!isLoading && !isEditList" class="mt-4 px-2 flex flex-col items-center justify-center gap-2 text-base-content/30">
+      <!-- <span class="text-center">{{ $t('album.no_albums.title') }}</span> -->
       <span class="text-sm text-center">{{ $t('album.no_albums.description') }}</span>
-      <button class="btn btn-primary rounded-box" @click="clickNewAlbum">
+      <button class="mt-2 btn btn-primary btn-sm rounded-box" @click="clickNewAlbum">
         <IconAdd class="w-5 h-5" />
         {{ $t('menu.album.add') }}
       </button>
