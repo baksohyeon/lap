@@ -137,8 +137,8 @@ jobs:
         if: matrix.target == 'aarch64-apple-darwin'
         shell: bash
         run: |
-          rm -rf src-tauri/target/aarch64-apple-darwin/release/build/ffmpeg-sys-next-*
-          rm -rf src-tauri/target/aarch64-apple-darwin/debug/build/ffmpeg-sys-next-*
+          rm -rf src-tauri/target/${{ matrix.target }}/release/build/ffmpeg-sys-next-*
+          rm -rf src-tauri/target/${{ matrix.target }}/debug/build/ffmpeg-sys-next-*
           rm -rf src-tauri/target/release/build/ffmpeg-sys-next-*
           rm -rf src-tauri/target/debug/build/ffmpeg-sys-next-*
 
