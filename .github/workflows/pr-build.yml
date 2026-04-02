@@ -291,6 +291,14 @@ jobs:
         with:
           arch: x64
 
+      - name: Clear cached Windows bundle artifacts
+        shell: pwsh
+        run: |
+          $bundleDir = "src-tauri/target/x86_64-pc-windows-msvc/release/bundle"
+          if (Test-Path $bundleDir) {
+            Remove-Item -Recurse -Force $bundleDir
+          }
+
       - name: Build FFmpeg with vcpkg (Windows dynamic)
         shell: pwsh
         run: |
