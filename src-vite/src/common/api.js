@@ -467,15 +467,15 @@ export async function deleteFolder(folderPath) {
   return null;
 };
 
-/// reveal a folder in file explorer( or finder)
-export async function revealFolder(folderPath) {
+/// reveal a file or folder in file explorer (or finder)
+export async function revealPath(path) {
   try {
-    const result = await invoke('reveal_folder', { folderPath });
+    const result = await invoke('reveal_path', { path });
     if(result) {
       return result;
     };
   } catch (error) {
-    console.error('revealFolder error:', error);
+    console.error('revealPath error:', error);
   }
   return null;
 };

@@ -274,7 +274,7 @@
         <!-- Quick View Overlay -->
         <div v-if="showQuickView && fileList[selectedItemIndex]" 
           class="absolute inset-0 z-60 flex items-center justify-center bg-base-200/80 backdrop-blur-md overflow-hidden"
-          :class="[ config.settings.showStatusBar ? 'mt-12 mb-8': 'mt-12 mb-1' ]"
+          :class="[ config.settings.showStatusBar ? 'mt-12 mb-8': 'mt-12' ]"
         >
           <div
             class="relative w-full h-full flex items-center justify-center"
@@ -564,7 +564,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { getAlbum, recountAlbum, getQueryCountAndSum, getQueryTimeLine, getQueryFiles, getFolderFiles, getFolderThumbCount,
          copyImage, renameFile, moveFile, copyFile, deleteFile, deleteDbFile, editFileComment, getFileThumb, getFileInfo,
          setFileRotate, getFileHasTags, setFileFavorite, setFileRating, getTagsForFile, searchSimilarImages, generateEmbedding, 
-         revealFolder, getTagName, indexAlbum, listenIndexProgress, listenIndexFinished, setAlbumCover,
+         revealPath, getTagName, indexAlbum, listenIndexProgress, listenIndexFinished, setAlbumCover,
          updateFileInfo, addFileToDb, cancelIndexing as cancelIndexingApi, selectFolder, getFacesForFile, listenFaceIndexProgress,
          openFileWithApp, getIndexRecoveryInfo, clearIndexRecoveryInfo,
          dedupGetGroup, dedupDeleteSelected, getQueryFilePosition } from '@/common/api'; 
@@ -1350,7 +1350,7 @@ function handleItemAction(payload: { action: string, index: number }) {
         enterAlbumPreviewMode(selectedFile);
       }
     },
-    'reveal': () => revealFolder(getFolderPath(fileList.value[selectedItemIndex.value].file_path)),
+    'reveal': () => revealPath(fileList.value[selectedItemIndex.value].file_path),
     'refresh-file-info': () => void updateFile(fileList.value[selectedItemIndex.value]),
     'favorite': toggleFavorite,
     'rotate': clickRotate,

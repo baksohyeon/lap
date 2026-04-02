@@ -133,7 +133,7 @@ import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@/stores/uiStore';
 import { libConfig } from '@/common/config';
 import { isMac, shortenFilename, isValidFileName } from '@/common/utils';
-import { createFolder, renameFolder, fetchFolder, moveFolder, copyFolder, revealFolder, deleteFolder } from '@/common/api';
+import { createFolder, renameFolder, fetchFolder, moveFolder, copyFolder, revealPath, deleteFolder } from '@/common/api';
 import { setFolderFavorite } from '@/common/api';
 import { Album, Folder } from '@/common/types';
 import { useAlbumSelection } from '@/composables/useAlbumSelection';
@@ -268,7 +268,7 @@ const getMenuItemsForFolder = (folder: any) => {
     {
       label: isMac ? localeMsg.value.menu.file.reveal_in_finder : localeMsg.value.menu.file.reveal_in_file_explorer,
       action: () => {
-        revealFolder(folder.path);
+        revealPath(folder.path);
       }
     },
     {
