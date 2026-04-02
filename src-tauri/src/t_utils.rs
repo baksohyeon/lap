@@ -633,6 +633,49 @@ pub fn rename_file(file_path: &str, new_file_name: &str) -> Option<String> {
     }
 }
 
+/// reveal a file or folder in the file explorer (or finder)
+pub fn reveal_path(path: &str) -> Result<(), String> {
+    if path.trim().is_empty() {
+        return Err("Missing path".to_string());
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg("-R")
+            .arg(path)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("explorer")
+            .arg("/select,")
+            .arg(path)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        let target = Path::new(path);
+        let reveal_target = if target.is_dir() {
+            path.to_string()
+        } else {
+            target
+                .parent()
+                .and_then(|parent| parent.to_str())
+                .ok_or_else(|| "Failed to resolve parent directory".to_string())?
+                .to_string()
+        };
+
+        opener::open(reveal_target).map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
 /// Get all files in a folder(not include sub-folders)
 /// Returns (files, new_count, updated_count)
 pub fn get_folder_files(

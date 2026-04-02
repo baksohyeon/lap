@@ -295,10 +295,10 @@ pub fn delete_folder(folder_path: &str) -> Result<usize, String> {
         .map_err(|e| format!("Error while deleting folder from DB: {}", e))
 }
 
-/// reveal a folder in the file explorer( or finder)
+/// reveal a file or folder in the file explorer (or finder)
 #[tauri::command]
-pub fn reveal_folder(folder_path: &str) -> Result<(), String> {
-    opener::open(folder_path).map_err(|e| e.to_string())
+pub fn reveal_path(path: &str) -> Result<(), String> {
+    t_utils::reveal_path(path)
 }
 
 /// open an external URL or app-specific deep link

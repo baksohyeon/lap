@@ -22,13 +22,10 @@ mod t_face;
 mod t_image;
 mod t_lens;
 mod t_libraw;
-mod t_metadata;
 mod t_menu;
 mod t_migration;
 mod t_protocol;
-mod t_sidecar;
 mod t_sqlite;
-mod t_exiftool;
 mod t_utils;
 mod t_video;
 
