@@ -549,9 +549,6 @@
     @continue="confirmIndexRecoveryContinue"
     @cancel="cancelIndexRecovery"
   />
-
-  <ToolTip ref="toolTipRef" />
-
 </template>
 
 <script setup lang="ts">
@@ -560,6 +557,7 @@ import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { emit as tauriEmit, listen } from '@tauri-apps/api/event';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useI18n } from 'vue-i18n';
+import { useToast } from '@/common/toast';
 import { useUIStore } from '@/stores/uiStore';
 import { getAlbum, recountAlbum, getQueryCountAndSum, getQueryTimeLine, getQueryFiles, getFolderFiles, getFolderThumbCount,
          copyImage, renameFile, moveFile, copyFile, deleteFile, deleteDbFile, editFileComment, getFileThumb, getFileInfo,
@@ -583,7 +581,6 @@ import MediaViewer from '@/components/MediaViewer.vue';
 import MessageBox from '@/components/MessageBox.vue';
 import IndexRecoveryDialog from '@/components/IndexRecoveryDialog.vue';
 import MoveTo from '@/components/MoveTo.vue';
-import ToolTip from '@/components/ToolTip.vue';
 import TButton from '@/components/TButton.vue';
 import TaggingDialog from '@/components/TaggingDialog.vue';
 import EditImage from '@/components/EditImage.vue';
@@ -1053,7 +1050,7 @@ const visibleItemCount = computed(() => {
 
 const timelineData = ref<any[]>([]);  // timeline markers for scrollbar
 
-const toolTipRef = ref<any>(null);
+const toast = useToast();
 const isProcessing = ref(false);  // show processing status
 const isLoading = ref(false);     // show loading status in GridView (for empty file list)
 const hasLoadedInitialResult = ref(false); // avoid showing "No files found" before first real result returns
@@ -1307,9 +1304,9 @@ async function clickSetAlbumCover() {
     try {
       await setAlbumCover(albumId, file.id);
       await tauriEmit('album-cover-changed', { albumId: albumId, fileId: file.id });
-      toolTipRef.value.showTip(localeMsg.value.tooltip.set_album_cover.success);
+      toast.success(localeMsg.value.tooltip.set_album_cover.success);
     } catch (error) {
-      toolTipRef.value.showTip(localeMsg.value.tooltip.set_album_cover.failed, true);
+      toast.error(localeMsg.value.tooltip.set_album_cover.failed);
     }
   }
 }
@@ -3248,14 +3245,14 @@ async function enterPersonSearchMode(file: any) {
   // fetch faces
   const faces = await getFacesForFile(file.id);
   if (!faces || faces.length === 0) {
-     toolTipRef.value?.showTip(localeMsg.value.tooltip.not_found.person || "No person found", false);
+     toast.info(localeMsg.value.tooltip.not_found.person || "No person found");
      return;
   }
 
   // Find first face with person_id
   const face = faces.find((f: any) => f.person_id && f.person_id > 0);
   if (!face) {
-     toolTipRef.value?.showTip(localeMsg.value.tooltip.not_found.person || "No person found", false);
+     toast.info(localeMsg.value.tooltip.not_found.person || "No person found");
      return;
   }
 
@@ -3452,7 +3449,7 @@ const onFileSaved = async (success: boolean, payload: SavedFilePayload = {}) => 
       if (!inserted) {
         updateContent();
       }
-      toolTipRef.value.showTip(localeMsg.value.tooltip.save_image.save_as_success || localeMsg.value.tooltip.save_image.success);
+      toast.success(localeMsg.value.tooltip.save_image.save_as_success || localeMsg.value.tooltip.save_image.success);
     } else {
       const savedFile = fileList.value[selectedItemIndex.value];
       if (savedFile?.file_path) {
@@ -3464,10 +3461,10 @@ const onFileSaved = async (success: boolean, payload: SavedFilePayload = {}) => 
         await syncFileMetaToImageViewer(savedFile.id, { rotate: 0 });
       }
       updateFile(fileList.value[selectedItemIndex.value]);
-      toolTipRef.value.showTip(localeMsg.value.tooltip.save_image.success);
+      toast.success(localeMsg.value.tooltip.save_image.success);
     }
   } else {
-    toolTipRef.value.showTip(localeMsg.value.tooltip.save_image.failed, true);
+    toast.error(localeMsg.value.tooltip.save_image.failed);
   }
 }
 
@@ -3482,9 +3479,9 @@ const clickCopyImage = async (filePath: string) => {
   } finally {
     isProcessing.value = false;
     if (success) {
-      toolTipRef.value.showTip(localeMsg.value.tooltip.copy_image.success);
+      toast.success(localeMsg.value.tooltip.copy_image.success);
     } else {
-      toolTipRef.value.showTip(localeMsg.value.tooltip.copy_image.failed, true);
+      toast.error(localeMsg.value.tooltip.copy_image.failed);
     }
   }
 }

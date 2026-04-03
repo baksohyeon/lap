@@ -86,8 +86,6 @@
         </div>
       </div>
     </div>
-
-    <ToolTip ref="toolTipRef" />
   </div>
 </template>
 
@@ -97,7 +95,6 @@ import { useI18n } from 'vue-i18n';
 import { getPackageInfo, getBuildTime } from '@/common/api';
 import { useAppUpdater } from '@/common/updater';
 import { IconGithub, IconLink, IconLock, IconFocus } from '@/common/icons';
-import ToolTip from '@/components/ToolTip.vue';
 
 const packageInfo = ref<any>({
   name: '',
@@ -121,7 +118,6 @@ const issuesUrl = computed(() => {
 });
 const { locale, messages } = useI18n();
 const localeMsg = computed(() => messages.value[locale.value] as any);
-const toolTipRef = ref<InstanceType<typeof ToolTip> | null>(null);
 const {
   isCheckingUpdate,
   isInstallingUpdate,
@@ -129,7 +125,7 @@ const {
   updateButtonText,
   isUpdateActionEnabled,
   handleUpdateAction,
-} = useAppUpdater(localeMsg, toolTipRef);
+} = useAppUpdater(localeMsg, { toastPlacement: 'center' });
 
 onMounted(async () => {
   try {

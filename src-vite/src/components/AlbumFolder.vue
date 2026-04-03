@@ -121,9 +121,6 @@
     @ok="clickCopyTo"
     @cancel="showCopyTo = false"
   />
-
-  <ToolTip ref="toolTipRef" />
-
 </template>
 
 <script setup lang="ts">
@@ -142,8 +139,8 @@ import AlbumFolder from '@/components/AlbumFolder.vue';
 import ContextMenu from '@/components/ContextMenu.vue';
 import MoveTo from '@/components/MoveTo.vue';
 import MessageBox from '@/components/MessageBox.vue';
-import ToolTip from '@/components/ToolTip.vue';
 import TButton from '@/components/TButton.vue';
+import { useToast } from '@/common/toast';
 
 import {
   IconRight,
@@ -208,7 +205,7 @@ const showTrashFolderMsgbox = ref(false);
 const showMoveTo = ref(false);
 const showCopyTo = ref(false);
 
-const toolTipRef = ref<InstanceType<typeof ToolTip> | null>(null);
+const toast = useToast();
 const treeRootRef = ref<HTMLElement | null>(null);
 
 // more menuitems - function that takes the folder being right-clicked
@@ -454,7 +451,7 @@ const clickNewFolder = async (newFolderName: string) => {
       });
     }
   } else {
-    toolTipRef.value?.showTip(localeMsg.value.msgbox.new_folder.error);
+    toast.error(localeMsg.value.msgbox.new_folder.error);
   }
 };
 
@@ -544,7 +541,7 @@ const clickMoveTo = async () => {
         await selection.expandAndSelectFolder(destAlbumId, newPath);
       }
     } else {
-      toolTipRef.value?.showTip(localeMsg.value.msgbox.move_to.error);
+      toast.error(localeMsg.value.msgbox.move_to.error);
     }
   });
 };
@@ -556,7 +553,7 @@ const clickCopyTo = async () => {
       // close copy-to dialog
       showCopyTo.value = false;
     } else {
-      toolTipRef.value?.showTip(localeMsg.value.msgbox.copy_to.error);
+      toast.error(localeMsg.value.msgbox.copy_to.error);
     }
   });
 };
@@ -591,7 +588,7 @@ const clickTrashFolder = async () => {
     showTrashFolderMsgbox.value = false;
   } else {
     console.log('AlbumFolder.vue-clickTrashFolder', localeMsg.value.msgbox.trash_folder.error);
-    toolTipRef.value?.showTip(localeMsg.value.msgbox.trash_folder.error);
+    toast.error(localeMsg.value.msgbox.trash_folder.error);
   }
 };
 

@@ -315,8 +315,6 @@
         @slideshow-next="emit('slideshow-next')"
       ></Video>
     </div>
-
-    <ToolTip ref="toolTipRef" />
     </template>
   </div>
 </template>
@@ -326,10 +324,10 @@ import { defineAsyncComponent, ref, computed, onMounted, onBeforeUnmount } from 
 import { useI18n } from 'vue-i18n';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { config, libConfig } from '@/common/config';
+import { useToast } from '@/common/toast';
 import { isWin, getSlideShowInterval } from '@/common/utils';
 
 import Image from '@/components/Image.vue';
-import ToolTip from '@/components/ToolTip.vue';
 import TButton from '@/components/TButton.vue';
 import { 
   IconLeft, 
@@ -490,7 +488,7 @@ const contextMenuRef = ref<any>(null);
 const containerRef = ref<HTMLElement | null>(null);
 const mediaAreaRef = ref<HTMLElement | null>(null);
 const mediaRef = ref<any>(null);
-const toolTipRef = ref<any>(null);
+const toast = useToast();
 const isHoverLeft = ref(false);
 const isHoverRight = ref(false);
 const isHoverTop = ref(false);
@@ -771,14 +769,19 @@ const getViewportState = () => mediaRef.value?.getViewportState?.();
 const applyViewportState = (viewport: any, silent = false) => mediaRef.value?.applyViewportState?.(viewport, silent);
 const getCurrentImageSrc = () => mediaRef.value?.getCurrentImageSrc?.() || '';
 const clearPreloadCache = (filePath?: string) => mediaRef.value?.clearPreloadCache?.(filePath);
-const showMessage = (message: string, isWarning: boolean = false) => toolTipRef.value?.showTip(message, isWarning);
-const showTip = (message: string, isWarning: boolean = false) => toolTipRef.value?.showTip(message, isWarning);
+const showMessage = (message: string, isWarning: boolean = false) => {
+  if (isWarning) {
+    toast.warning(message, { placement: 'bottom-right' });
+    return;
+  }
+  toast.info(message, { placement: 'bottom-right' });
+};
 
 const triggerPrev = () => {
   if (props.hasPrevious) {
     emit('prev');
   } else {
-    showTip((localeMsg.value as any).tooltip.image_viewer.first_image);
+    // showMessage((localeMsg.value as any).tooltip.image_viewer.first_image);
   }
 }
 
@@ -786,7 +789,7 @@ const triggerNext = () => {
   if (props.hasNext) {
     emit('next');
   } else {
-    showTip((localeMsg.value as any).tooltip.image_viewer.last_image);
+    // showMessage((localeMsg.value as any).tooltip.image_viewer.last_image);
   }
 }
 

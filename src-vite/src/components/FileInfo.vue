@@ -387,14 +387,13 @@
         </div>
       </div>
     </div>
-
-    <ToolTip ref="toolTipRef" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, nextTick, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useToast } from '@/common/toast';
 import { useUIStore } from '@/stores/uiStore';
 import { config } from '@/common/config';
 import { renameFile, editImage, getAlbum } from '@/common/api';
@@ -426,7 +425,6 @@ import {
   IconZoomOut,
 } from '@/common/icons';
 import TButton from '@/components/TButton.vue';
-import ToolTip from '@/components/ToolTip.vue';
 import MapView from '@/components/MapView.vue';
 
 const props = defineProps({
@@ -453,7 +451,7 @@ const emit = defineEmits([
   'refreshFileInfo',
 ]);
 
-const toolTipRef = ref<InstanceType<typeof ToolTip> | null>(null);
+const toast = useToast();
 const showPreviewPanel = computed(() => config.infoPanel.showPreview);
 const previewScaleOptions = [1, 0.75, 0.5, 0.25];
 const previewScale = computed({
@@ -567,17 +565,17 @@ const quickSave = async (): Promise<boolean> => {
   try {
     const success = await editImage(editParams);
     if (!success) {
-      toolTipRef.value?.showTip(localeMsg.value.tooltip.save_image.failed, true);
+      toast.error(localeMsg.value.tooltip.save_image.failed);
       return false;
     }
 
     uiStore.updateFileVersion(props.fileInfo.file_path);
     uiStore.clearActiveAdjustments();
     emit('success');
-    toolTipRef.value?.showTip(localeMsg.value.tooltip.save_image.success);
+    toast.success(localeMsg.value.tooltip.save_image.success);
     return true;
   } catch {
-    toolTipRef.value?.showTip(localeMsg.value.tooltip.save_image.failed, true);
+    toast.error(localeMsg.value.tooltip.save_image.failed);
     return false;
   }
 };

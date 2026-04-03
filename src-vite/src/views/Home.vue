@@ -149,8 +149,6 @@
       @ok="onManageLibrariesOk"
       @cancel="showManageLibraries = false"
     />
-
-    <ToolTip ref="toolTipRef" />
   </div>
 
 </template>
@@ -181,7 +179,6 @@ import TButton from '@/components/TButton.vue';
 import Content from '@/components/Content.vue';
 import ContextMenu from '@/components/ContextMenu.vue';
 import ManageLibraries from '@/components/ManageLibraries.vue';
-import ToolTip from '@/components/ToolTip.vue';
 import iconLogo from '@/assets/images/logo.png';
 
 import {
@@ -240,7 +237,6 @@ const isDraggingSplitter = ref(false);
 
 const appName = ref('');
 const showDebugBadge = import.meta.env.DEV;
-const toolTipRef = ref<InstanceType<typeof ToolTip> | null>(null);
 let unlistenOpenPreferences: (() => void) | null = null;
 let unlistenOpenAbout: (() => void) | null = null;
 const {
@@ -253,7 +249,7 @@ const {
   isUpdateActionEnabled,
   checkForUpdates,
   handleUpdateAction,
-} = useAppUpdater(localeMsg, toolTipRef);
+} = useAppUpdater(localeMsg);
 
 // buttons
 const buttons = computed(() =>  [

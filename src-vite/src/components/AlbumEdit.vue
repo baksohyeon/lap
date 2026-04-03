@@ -90,7 +90,6 @@
         {{ $t('msgbox.ok') }}
       </button>
     </div>
-    <ToolTip ref="toolTipRef" />
   </ModalDialog>
 </template>
 
@@ -99,12 +98,12 @@
 import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { countFolder, getAllAlbums } from '@/common/api';
+import { useToast } from '@/common/toast';
 import { formatFileSize, openFolderDialog, getFolderName } from '@/common/utils';
 import { useUIStore } from '@/stores/uiStore';
 
 import ModalDialog from '@/components/ModalDialog.vue';
 import TButton from '@/components/TButton.vue';
-import ToolTip from '@/components/ToolTip.vue';
 import { IconNewFolder } from '@/common/icons';
 
 const props = defineProps({
@@ -146,8 +145,7 @@ const emit = defineEmits(['ok', 'cancel']);
 const uiStore = useUIStore();
 const { t } = useI18n();
 
-// tooltip
-const toolTipRef = ref<InstanceType<typeof ToolTip> | null>(null);
+const toast = useToast();
 
 // select folder
 const selectedFolder = ref('');
@@ -246,7 +244,7 @@ const clickOk = async () => {
       const albums = await getAllAlbums();
       const exists = albums?.some((album: any) => album.path === selectedFolder.value);
       if (exists) {
-        toolTipRef.value?.showTip(t('tooltip.album_exists'));
+        toast.warning(t('tooltip.album_exists'));
         return;
       }
     }

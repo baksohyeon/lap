@@ -1,6 +1,7 @@
 import { computed, ref, type Ref } from 'vue';
 import { check, type Update, type DownloadEvent } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
+import { useToast, type ToastPlacement } from '@/common/toast';
 
 const UPDATE_CHECK_INTERVAL = 24 * 60 * 60 * 1000;
 const UPDATE_CHECK_KEY = 'lap_last_update_check';
@@ -14,10 +15,13 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
-export function useAppUpdater(
-  localeMsg: Ref<any>,
-  toolTipRef: Ref<{ showTip: (message: string, isWarning?: boolean) => void } | null>
-) {
+interface AppUpdaterOptions {
+  toastPlacement?: ToastPlacement;
+}
+
+export function useAppUpdater(localeMsg: Ref<any>, options: AppUpdaterOptions = {}) {
+  const toast = useToast();
+  const toastPlacement = options.toastPlacement ?? 'bottom-right';
   const updateAvailable = ref(false);
   const isCheckingUpdate = ref(false);
   const isInstallingUpdate = ref(false);
@@ -96,7 +100,7 @@ export function useAppUpdater(
       downloadTotalBytes = event.data.contentLength || 0;
       downloadedBytes = 0;
       downloadPercent.value = downloadTotalBytes > 0 ? 0 : null;
-      toolTipRef.value?.showTip(localeMsg.value.settings.about.auto_update.downloading_started);
+      toast.info(localeMsg.value.settings.about.auto_update.downloading_started, { placement: toastPlacement });
       return;
     }
 
@@ -111,7 +115,7 @@ export function useAppUpdater(
     if (event.event === 'Finished') {
       isDownloadingUpdate.value = false;
       downloadPercent.value = 100;
-      toolTipRef.value?.showTip(localeMsg.value.settings.about.auto_update.download_finished);
+      toast.success(localeMsg.value.settings.about.auto_update.download_finished, { placement: toastPlacement });
     }
   }
 
@@ -136,7 +140,7 @@ export function useAppUpdater(
       localStorage.setItem(UPDATE_CHECK_KEY, String(Date.now()));
       if (!update) {
         if (manual) {
-          toolTipRef.value?.showTip(localeMsg.value.settings.about.auto_update.latest_version);
+          toast.info(localeMsg.value.settings.about.auto_update.latest_version, { placement: toastPlacement });
         }
         return;
       }
@@ -144,14 +148,15 @@ export function useAppUpdater(
       updateAvailable.value = true;
       updateVersion.value = update.version;
       currentUpdate = update;
-      toolTipRef.value?.showTip(
-        localeMsg.value.settings.about.auto_update.new_version_available.replace('{version}', update.version)
+      toast.info(
+        localeMsg.value.settings.about.auto_update.new_version_available.replace('{version}', update.version),
+        { placement: toastPlacement }
       );
     } catch (error: unknown) {
       const message = getErrorMessage(error, localeMsg.value.settings.about.auto_update.failed_check);
       console.error('Failed to check for updates:', error);
       if (manual) {
-        toolTipRef.value?.showTip(message, true);
+        toast.error(message, { placement: toastPlacement });
       }
     } finally {
       isCheckingUpdate.value = false;
@@ -167,7 +172,7 @@ export function useAppUpdater(
       } catch (error: unknown) {
         const message = getErrorMessage(error, localeMsg.value.settings.about.auto_update.failed_install);
         console.error('Failed to relaunch after update:', error);
-        toolTipRef.value?.showTip(message, true);
+        toast.error(message, { placement: toastPlacement });
       }
       return;
     }
@@ -177,18 +182,18 @@ export function useAppUpdater(
     try {
       isInstallingUpdate.value = true;
       resetDownloadProgress();
-      toolTipRef.value?.showTip(localeMsg.value.settings.about.auto_update.downloading_update);
+      toast.info(localeMsg.value.settings.about.auto_update.downloading_update, { placement: toastPlacement });
       await currentUpdate.downloadAndInstall(handleDownloadEvent);
       updateAvailable.value = false;
       updateVersion.value = '';
       currentUpdate = null;
       isUpdateReadyToRestart.value = true;
-      toolTipRef.value?.showTip(localeMsg.value.settings.about.auto_update.update_installed_waiting_restart);
+      toast.success(localeMsg.value.settings.about.auto_update.update_installed_waiting_restart, { placement: toastPlacement });
     } catch (error: unknown) {
       resetDownloadProgress();
       const message = getErrorMessage(error, localeMsg.value.settings.about.auto_update.failed_install);
       console.error('Failed to install update:', error);
-      toolTipRef.value?.showTip(message, true);
+      toast.error(message, { placement: toastPlacement });
     } finally {
       resetDownloadProgress();
       isInstallingUpdate.value = false;

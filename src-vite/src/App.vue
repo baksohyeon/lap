@@ -2,7 +2,10 @@
   <div v-if="!isReady" class="w-screen h-screen flex items-center justify-center bg-base-300">
     <span class="loading loading-spinner loading-lg text-primary app-loading-delayed"></span>
   </div>
-  <router-view v-else />
+  <template v-else>
+    <router-view />
+    <ToastContainer />
+  </template>
 </template>
  
 <script setup>
@@ -13,6 +16,7 @@ import { useConfigStore } from '@/stores/configStore';
 import { useLibraryStore } from '@/stores/libraryStore';
 import { clearIndexRecoveryInfo } from '@/common/api';
 import { setTheme, SCALE_VALUES } from '@/common/utils';
+import ToastContainer from '@/components/ToastContainer.vue';
 
 const libConfig = useLibraryStore();
 const isReady = ref(false);
