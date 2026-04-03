@@ -3632,86 +3632,108 @@ const onTrashFile = async () => {
     !!dedupTrashGroupKey.value;
   const preDeleteGroups = shouldAdvanceDedup ? buildDuplicateGroups(fileList.value) : [];
   const currentDedupGroupKey = dedupTrashGroupKey.value;
+  try {
+    if (dedupDeleteFileIds.value.length > 0) {
+      const ids = [...dedupDeleteFileIds.value];
+      fileList.value
+        .filter(file => ids.includes(file.id))
+        .forEach(file => affectedAlbumIds.add(Number(file.album_id || 0)));
+      const success = await dedupDeleteSelected(null, ids);
+      if (success !== undefined) {
+        deletedFileIds.push(...ids);
+        closeTrashMsgbox();
+        await updateContent();
+        await refreshAffectedAlbums(Array.from(affectedAlbumIds));
+        tauriEmit('files-deleted', {
+          source: 'content',
+          fileIds: deletedFileIds,
+          fileCount: fileList.value.length,
+          selectedIndex: selectedItemIndex.value,
+        });
+        toast.success(
+          localeMsg.value.msgbox.trash_files.success.replace('{count}', ids.length.toLocaleString())
+        );
+        return;
+      }
+      throw new Error('Failed to trash dedup files');
+    }
+    else if (selectMode.value && selectedCount.value > 0) {     // multi-select mode
+      const selectedItems = getActionableSelectedItems();
+      selectedItems.forEach(item => affectedAlbumIds.add(Number(item.album_id || 0)));
+      deletedFileIds.push(...selectedItems.map(item => item.id));
+      const deletes = selectedItems
+        .map(async item => {
+          await deleteFileAlways(item);
+        });
+      await Promise.all(deletes); // parallelize DB updates
+      fileList.value = fileList.value.filter((f) => !deletedFileIds.includes(f.id));
+      totalFileCount.value = fileList.value.length;
+      totalFileSize.value = fileList.value.reduce((total, file) => total + file.size, 0);
+      selectedItemIndex.value = fileList.value.length > 0 ? Math.min(selectedItemIndex.value, fileList.value.length - 1) : -1;
+    } 
+    else if(selectedItemIndex.value >= 0) {               // single select mode
+      const deletedFileName = fileList.value[selectedItemIndex.value]?.name || '';
+      affectedAlbumIds.add(Number(fileList.value[selectedItemIndex.value].album_id || 0));
+      deletedFileIds.push(fileList.value[selectedItemIndex.value].id);
+      await deleteFileAlways(fileList.value[selectedItemIndex.value]);
+      removeFromFileList(selectedItemIndex.value);
+      toast.success(
+        localeMsg.value.msgbox.trash_file.success.replace('{file}', deletedFileName)
+      );
+    }
 
-  if (dedupDeleteFileIds.value.length > 0) {
-    const ids = [...dedupDeleteFileIds.value];
-    fileList.value
-      .filter(file => ids.includes(file.id))
-      .forEach(file => affectedAlbumIds.add(Number(file.album_id || 0)));
-    const success = await dedupDeleteSelected(null, ids);
-    if (success !== undefined) {
-      deletedFileIds.push(...ids);
-      closeTrashMsgbox();
-      await updateContent();
-      await refreshAffectedAlbums(Array.from(affectedAlbumIds));
+    await refreshAffectedAlbums(Array.from(affectedAlbumIds));
+    await refreshLibraryTotalCount();
+
+    if (deletedFileIds.length > 0) {
       tauriEmit('files-deleted', {
         source: 'content',
         fileIds: deletedFileIds,
         fileCount: fileList.value.length,
         selectedIndex: selectedItemIndex.value,
       });
-      return;
     }
-  }
-  else if (selectMode.value && selectedCount.value > 0) {     // multi-select mode
-    const selectedItems = getActionableSelectedItems();
-    selectedItems.forEach(item => affectedAlbumIds.add(Number(item.album_id || 0)));
-    deletedFileIds.push(...selectedItems.map(item => item.id));
-    const deletes = selectedItems
-      .map(async item => {
-        await deleteFileAlways(item);
-      });
-    await Promise.all(deletes); // parallelize DB updates
-    fileList.value = fileList.value.filter((f) => !deletedFileIds.includes(f.id));
-    totalFileCount.value = fileList.value.length;
-    totalFileSize.value = fileList.value.reduce((total, file) => total + file.size, 0);
-    selectedItemIndex.value = fileList.value.length > 0 ? Math.min(selectedItemIndex.value, fileList.value.length - 1) : -1;
-  } 
-  else if(selectedItemIndex.value >= 0) {               // single select mode
-    affectedAlbumIds.add(Number(fileList.value[selectedItemIndex.value].album_id || 0));
-    deletedFileIds.push(fileList.value[selectedItemIndex.value].id);
-    await deleteFileAlways(fileList.value[selectedItemIndex.value]);
-    removeFromFileList(selectedItemIndex.value);
-  }
 
-  await refreshAffectedAlbums(Array.from(affectedAlbumIds));
-  await refreshLibraryTotalCount();
+    if (selectMode.value && deletedFileIds.length > 0) {
+      toast.success(
+        localeMsg.value.msgbox.trash_files.success.replace('{count}', deletedFileIds.length.toLocaleString())
+      );
+    }
 
-  if (deletedFileIds.length > 0) {
-    tauriEmit('files-deleted', {
-      source: 'content',
-      fileIds: deletedFileIds,
-      fileCount: fileList.value.length,
-      selectedIndex: selectedItemIndex.value,
-    });
-  }
+    closeTrashMsgbox();
+    updateSelectedImage(selectedItemIndex.value);
 
-  closeTrashMsgbox();
-  updateSelectedImage(selectedItemIndex.value);
-
-  if (shouldAdvanceDedup) {
-    const postDeleteGroups = buildDuplicateGroups(fileList.value);
-    if (postDeleteGroups.length > 0) {
-      const previousIndex = preDeleteGroups.findIndex(group => group.key === currentDedupGroupKey);
-      const orderedNextKeys =
-        previousIndex >= 0
-          ? [
-              ...preDeleteGroups.slice(previousIndex + 1).map(group => group.key),
-              ...preDeleteGroups.slice(0, previousIndex).map(group => group.key),
-            ]
-          : [];
-      const availableKeys = new Set(postDeleteGroups.map(group => group.key));
-      const nextKey = orderedNextKeys.find(key => availableKeys.has(key)) || postDeleteGroups[0].key;
-      const nextGroup = postDeleteGroups.find(group => group.key === nextKey);
-      const nextFileId = nextGroup?.files?.[0]?.id;
-      if (nextFileId) {
-        const index = fileList.value.findIndex(file => file.id === nextFileId);
-        if (index !== -1) {
-          selectedItemIndex.value = index;
-          updateSelectedImage(index);
+    if (shouldAdvanceDedup) {
+      const postDeleteGroups = buildDuplicateGroups(fileList.value);
+      if (postDeleteGroups.length > 0) {
+        const previousIndex = preDeleteGroups.findIndex(group => group.key === currentDedupGroupKey);
+        const orderedNextKeys =
+          previousIndex >= 0
+            ? [
+                ...preDeleteGroups.slice(previousIndex + 1).map(group => group.key),
+                ...preDeleteGroups.slice(0, previousIndex).map(group => group.key),
+              ]
+            : [];
+        const availableKeys = new Set(postDeleteGroups.map(group => group.key));
+        const nextKey = orderedNextKeys.find(key => availableKeys.has(key)) || postDeleteGroups[0].key;
+        const nextGroup = postDeleteGroups.find(group => group.key === nextKey);
+        const nextFileId = nextGroup?.files?.[0]?.id;
+        if (nextFileId) {
+          const index = fileList.value.findIndex(file => file.id === nextFileId);
+          if (index !== -1) {
+            selectedItemIndex.value = index;
+            updateSelectedImage(index);
+          }
         }
       }
     }
+  } catch (error) {
+    console.error('Failed to trash file(s):', error);
+    toast.error(
+      (dedupDeleteFileIds.value.length > 0 || selectMode.value)
+        ? localeMsg.value.msgbox.trash_files.error
+        : localeMsg.value.msgbox.trash_file.error
+    );
   }
 }
 

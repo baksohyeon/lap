@@ -67,7 +67,7 @@ import { listen } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useI18n } from 'vue-i18n';
 import { config } from '@/common/config';
-import { getAssetSrc, getFileExtension, getPreviewUrl, setTheme, SCALE_VALUES, shortenFilename } from '@/common/utils';
+import { getAssetSrc, getPreviewUrl, setTheme, SCALE_VALUES, shortenFilename, shouldUseBackendPreview } from '@/common/utils';
 import TitleBar from '@/components/TitleBar.vue';
 
 const { locale, t } = useI18n();
@@ -101,12 +101,6 @@ function normalizeScale(value: number) {
 function applyWindowScale(scale: number) {
   const normalizedScale = normalizeScale(scale);
   document.documentElement.style.fontSize = `${normalizedScale * 16}px`;
-}
-
-function shouldUseBackendPreview(targetPath: string, targetFileType: number): boolean {
-  if (targetFileType === 3) return true;
-  const extension = getFileExtension(targetPath || '').toLowerCase();
-  return extension === 'tif' || extension === 'tiff' || extension === 'jxl';
 }
 
 async function resolvePrintSource(targetPath: string, targetFileType: number, targetFileId: number) {

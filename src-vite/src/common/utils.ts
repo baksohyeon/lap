@@ -322,6 +322,14 @@ export function getPreviewUrl(
   return base;
 }
 
+export function shouldUseBackendPreview(filePath = '', fileType = 0): boolean {
+  if (!filePath) return false;
+  if (Number(fileType) === 3) return true;
+
+  const extension = getFileExtension(filePath).toLowerCase();
+  return ['tif', 'tiff', 'jxl', 'heic', 'heif'].includes(extension);
+}
+
 export function getThumbnailDataUrl(
   thumb: { file_id?: number | null; error_code?: number | null } | null | undefined,
   placeholder = '',

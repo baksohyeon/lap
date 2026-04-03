@@ -1,5 +1,5 @@
 use exif::{In, Reader, Tag};
-use image::{DynamicImage, GenericImageView, ImageDecoder, ImageFormat};
+use image::{DynamicImage, ImageDecoder, ImageFormat};
 use jxl_oxide::integration::JxlDecoder;
 use std::fs::File;
 use std::io::BufReader;

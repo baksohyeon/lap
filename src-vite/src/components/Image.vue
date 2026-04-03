@@ -169,7 +169,7 @@
 import { ref, shallowRef, triggerRef, watch, onMounted, onBeforeUnmount, computed, nextTick } from 'vue';
 import { useUIStore } from '@/stores/uiStore';
 import { config, libConfig } from '@/common/config';
-import { getAssetSrc, getPreviewUrl } from '@/common/utils';
+import { getAssetSrc, getPreviewUrl, shouldUseBackendPreview } from '@/common/utils';
 import { getFacesForFile } from '@/common/api';
 import { RawFace, Face } from '@/common/types';
 
@@ -330,14 +330,9 @@ function waitForNextPaint() {
 }
 
 // inline loading for formats that require backend preview decoding
-const showInlineLoading = computed(() => shouldUseBackendPreview(props.filePath) && !!props.thumbnailSrc);
-
-function shouldUseBackendPreview(filePath?: string): boolean {
-  if (!filePath) return false;
-  if (Number(props.fileType || 0) === 3) return true;
-  const extension = filePath.split('.').pop()?.toLowerCase() || '';
-  return extension === 'tif' || extension === 'tiff' || extension === 'jxl';
-}
+const showInlineLoading = computed(() =>
+  shouldUseBackendPreview(props.filePath, Number(props.fileType || 0)) && !!props.thumbnailSrc
+);
 
 // navigator view mode
 const navContainerSize = computed(() => {
@@ -434,7 +429,7 @@ function loadImageResource(filePath?: string) {
       reject(new Error(`Error loading image: ${filePath}`));
     };
 
-    if (shouldUseBackendPreview(filePath)) {
+    if (shouldUseBackendPreview(filePath, Number(props.fileType || 0))) {
       src = getPreviewUrl(props.fileId, filePath);
       if (!src) {
         preloadCache.delete(filePath);
@@ -467,7 +462,7 @@ function loadImageResource(filePath?: string) {
 }
 
 function warmImage(filePath?: string) {
-  if (!filePath || filePath === props.filePath || shouldUseBackendPreview(filePath)) {
+  if (!filePath || filePath === props.filePath || shouldUseBackendPreview(filePath, Number(props.fileType || 0))) {
     return;
   }
 
@@ -902,7 +897,7 @@ watch(() => props.filePath, async (newFilePath) => {
     isLoading.value = true;
   }, 500);
 
-  const usesBackendPreview = shouldUseBackendPreview(newFilePath);
+  const usesBackendPreview = shouldUseBackendPreview(newFilePath, Number(props.fileType || 0));
   const hasPreviewPlaceholder = usesBackendPreview && !!props.thumbnailSrc;
   if (hasPreviewPlaceholder) {
     try {

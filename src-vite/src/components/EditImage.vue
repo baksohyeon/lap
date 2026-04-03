@@ -452,7 +452,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch, type CSSPropert
 import { useUIStore } from '@/stores/uiStore';
 import { useI18n } from 'vue-i18n';
 import { config } from '@/common/config';
-import { getFolderPath, shortenFilename, getFullPath, combineFileName, getSelectOptions, getFileExtension, getAssetSrc, getPreviewUrl } from '@/common/utils';
+import { getFolderPath, shortenFilename, getFullPath, combineFileName, getSelectOptions, getAssetSrc, getPreviewUrl, shouldUseBackendPreview } from '@/common/utils';
 import { editImage, checkFileExists } from '@/common/api';
 
 import ModalDialog from '@/components/ModalDialog.vue';
@@ -521,14 +521,12 @@ const isPortraitForRotation = (width: number, height: number, rotation: number) 
   const normalized = normalizeRotate(rotation);
   return normalized % 180 !== 0 ? width > height : height > width;
 };
-const isTiffFile = computed(() => {
-  const ext = getFileExtension(props.fileInfo?.name || props.fileInfo?.file_path || '').toLowerCase();
-  return ext === 'tif' || ext === 'tiff';
-});
-const isJxlFile = computed(() => {
-  const ext = getFileExtension(props.fileInfo?.name || props.fileInfo?.file_path || '').toLowerCase();
-  return ext === 'jxl';
-});
+const usesBackendPreview = computed(() =>
+  shouldUseBackendPreview(
+    props.fileInfo?.name || props.fileInfo?.file_path || '',
+    Number(props.fileInfo?.file_type || 0)
+  )
+);
 
 const enableTransition = ref(false);
 const position = ref({ left: 0, top: 0 });
@@ -1078,7 +1076,7 @@ const initEditImage = async () => {
   initEditImageLoadingId.value++;
   const loadingId = initEditImageLoadingId.value;
 
-  if (isRawFile.value || isTiffFile.value || isJxlFile.value) {
+  if (usesBackendPreview.value) {
     if (props.initialImageSrc) {
       imageSrc.value = props.initialImageSrc;
     }

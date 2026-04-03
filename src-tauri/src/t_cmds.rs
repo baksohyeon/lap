@@ -421,13 +421,7 @@ pub async fn copy_edited_image(params: t_image::EditParams) -> Result<bool, Stri
 /// copy image to clipboard
 #[tauri::command]
 pub async fn copy_image(file_path: String) -> Result<bool, String> {
-    tokio::task::spawn_blocking(move || {
-        if let Ok(img) = image::open(Path::new(&file_path)) {
-            Ok(t_image::copy_image_to_clipboard(img))
-        } else {
-            Err(format!("Failed to open image: {}", file_path))
-        }
-    })
+    tokio::task::spawn_blocking(move || t_image::copy_file_to_clipboard(&file_path))
     .await
     .map_err(|e| format!("Task error: {}", e))?
 }

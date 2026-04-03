@@ -24,6 +24,8 @@ use std::time::UNIX_EPOCH;
 use std::process::Command;
 
 use crate::{t_jxl, t_libraw, t_utils};
+#[cfg(not(target_os = "macos"))]
+use crate::t_video;
 
 /// Quick probing of image dimensions without loading the entire file
 pub fn get_image_dimensions(file_path: &str) -> Result<(u32, u32), String> {
@@ -539,6 +541,79 @@ pub fn copy_image_to_clipboard(img: DynamicImage) -> bool {
     false
 }
 
+fn is_heic_path(file_path: &str) -> bool {
+    matches!(
+        t_utils::get_file_extension(file_path)
+            .unwrap_or_default()
+            .to_lowercase()
+            .as_str(),
+        "heic" | "heif"
+    )
+}
+
+fn should_generate_preview_for_file(file_path: &str, file_type: i64) -> bool {
+    file_type == 3
+        || crate::t_libraw::is_tiff_path(file_path)
+        || t_jxl::is_jxl_path(file_path)
+        || is_heic_path(file_path)
+}
+
+fn get_generated_preview_bytes(file_path: &str) -> Result<Option<Vec<u8>>, String> {
+    let file_type = t_utils::get_file_type(file_path).unwrap_or(0);
+
+    if file_type == 3 {
+        return get_raw_preview_image(file_path);
+    }
+
+    if t_jxl::is_jxl_path(file_path) {
+        return t_jxl::get_jxl_preview_image(file_path, 4096);
+    }
+
+    if crate::t_libraw::is_tiff_path(file_path) {
+        return match get_raw_preview_image(file_path) {
+            Ok(Some(data)) => Ok(Some(data)),
+            _ => {
+                #[cfg(target_os = "macos")]
+                {
+                    get_thumbnail_with_sips(file_path, 4096)
+                }
+                #[cfg(not(target_os = "macos"))]
+                {
+                    Ok(None)
+                }
+            }
+        };
+    }
+
+    if is_heic_path(file_path) {
+        #[cfg(target_os = "macos")]
+        {
+            return get_thumbnail_with_sips(file_path, 4096);
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            return t_video::get_video_thumbnail(file_path, 4096);
+        }
+    }
+
+    Ok(None)
+}
+
+pub fn copy_file_to_clipboard(file_path: &str) -> Result<bool, String> {
+    if should_generate_preview_for_file(file_path, t_utils::get_file_type(file_path).unwrap_or(0))
+    {
+        let preview = get_generated_preview_bytes(file_path)?
+            .ok_or_else(|| format!("Failed to resolve preview image: {}", file_path))?;
+        let img = image::load_from_memory(&preview)
+            .map_err(|e| format!("Failed to decode preview image: {}", e))?;
+        return Ok(copy_image_to_clipboard(img));
+    }
+
+    let img = image::open(Path::new(file_path))
+        .map_err(|e| format!("Failed to open image: {}", e))?;
+    Ok(copy_image_to_clipboard(img))
+}
+
 /// copy an edited image to clipboard
 pub fn copy_edited_image_to_clipboard(params: EditParams) -> bool {
     if let Ok(img) = get_edited_image(&params) {
@@ -549,12 +624,12 @@ pub fn copy_edited_image_to_clipboard(params: EditParams) -> bool {
 
 /// get an edited image
 fn get_edited_image(params: &EditParams) -> Result<DynamicImage, String> {
-    let mut img = if t_utils::get_file_type(&params.source_file_path).unwrap_or(0) == 3
-        || crate::t_libraw::is_tiff_path(&params.source_file_path)
-    {
-        let preview = get_raw_preview_image(&params.source_file_path)?
-            .ok_or_else(|| "Failed to resolve editable RAW preview".to_string())?;
-        image::load_from_memory(&preview).map_err(|e| e.to_string())?
+    let file_type = t_utils::get_file_type(&params.source_file_path).unwrap_or(0);
+    let mut img = if should_generate_preview_for_file(&params.source_file_path, file_type) {
+        let preview = get_generated_preview_bytes(&params.source_file_path)?
+            .ok_or_else(|| "Failed to resolve editable preview image".to_string())?;
+        image::load_from_memory(&preview)
+            .map_err(|e| format!("Failed to decode editable preview image: {}", e))?
     } else {
         let path = Path::new(&params.source_file_path);
         let mut img = image::open(path).map_err(|e| e.to_string())?;
@@ -860,13 +935,9 @@ fn get_file_signature(file_path: &str) -> Result<(u64, u128), String> {
     Ok((metadata.len(), modified))
 }
 
-fn should_cache_file_image_result(file_path: &str, file_type: i64) -> bool {
-    file_type == 3 || crate::t_libraw::is_tiff_path(file_path) || t_jxl::is_jxl_path(file_path)
-}
-
 pub async fn get_file_image_bytes_cached(file_path: &str) -> Result<Vec<u8>, String> {
     let file_type = t_utils::get_file_type(file_path).unwrap_or(0);
-    let cache_signature = if should_cache_file_image_result(file_path, file_type) {
+    let cache_signature = if should_generate_preview_for_file(file_path, file_type) {
         Some(get_file_signature(file_path)?)
     } else {
         None
@@ -886,6 +957,17 @@ pub async fn get_file_image_bytes_cached(file_path: &str) -> Result<Vec<u8>, Str
     } else if t_jxl::is_jxl_path(file_path) {
         t_jxl::get_jxl_preview_image(file_path, 4096)?
             .ok_or_else(|| format!("Failed to resolve JXL preview image: {}", file_path))?
+    } else if is_heic_path(file_path) {
+        #[cfg(target_os = "macos")]
+        {
+            get_thumbnail_with_sips(file_path, 4096)?
+                .ok_or_else(|| format!("Failed to resolve HEIC preview image: {}", file_path))?
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            t_video::get_video_thumbnail(file_path, 4096)?
+                .ok_or_else(|| format!("Failed to resolve HEIC preview image: {}", file_path))?
+        }
     } else if crate::t_libraw::is_tiff_path(file_path) {
         match get_raw_preview_image(file_path) {
             Ok(Some(data)) => data,
