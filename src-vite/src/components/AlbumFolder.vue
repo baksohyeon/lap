@@ -171,6 +171,10 @@ const props = withDefaults(defineProps<{
   treeRoot: true,
 });
 
+const emit = defineEmits<{
+  rootRenamed: [payload: { albumId: number; newPath: string }];
+}>();
+
 // Inject selection context from AlbumList
 const selection = useAlbumSelection();
 
@@ -234,7 +238,6 @@ const getMenuItemsForFolder = (folder: any) => {
     {
       label: localeMsg.value.menu.file.rename,
       icon: IconRename,
-      disabled: isRoot,
       action: () => {
         isRenamingFolder.value = true;
         originalFolderName.value = folder.name;
@@ -466,16 +469,24 @@ const clickRenameFolder = async (newFolderName: string) => {
     isRenamingFolder.value = false;   // no change
     uiStore.removeInputHandler('AlbumFolder-rename');
   } else {
-    const newFolderPath_ = await renameFolder(selection.folderPath.value, newFolderName);
+    const oldFolderPath = selection.folderPath.value;
+    const newFolderPath_ = await renameFolder(oldFolderPath, newFolderName);
     if(newFolderPath_) {    // rename success
       let folder = selectedFolder.value;
       if (folder) {
         folder.name = newFolderName;
-        updateFolderPath(folder, selection.folderPath.value, newFolderPath_);
+        updateFolderPath(folder, oldFolderPath, newFolderPath_);
       }
 
       // update selected folder path
       selection.folderPath.value = newFolderPath_;
+
+      if (oldFolderPath === props.rootPath) {
+        emit('rootRenamed', {
+          albumId: props.albumId,
+          newPath: newFolderPath_,
+        });
+      }
 
       isRenamingFolder.value = false;
       uiStore.removeInputHandler('AlbumFolder-rename');

@@ -212,6 +212,30 @@ impl Album {
         Ok(result)
     }
 
+    /// rename the album root metadata and matching folders in one transaction
+    pub fn rename_root_folder(old_path: &str, new_path: &str) -> Result<(), String> {
+        let new_name = t_utils::get_file_name(new_path);
+        let mut conn = open_conn()?;
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+
+        tx.execute(
+            "UPDATE albums SET path = ?2 WHERE path = ?1",
+            params![old_path, new_path],
+        )
+        .map_err(|e| e.to_string())?;
+
+        tx.execute(
+            "UPDATE afolders
+            SET path = CONCAT(?2, SUBSTRING(path, LENGTH(?1) + 1)), name = ?3
+            WHERE path LIKE ?1 || '%'",
+            params![old_path, new_path, new_name],
+        )
+        .map_err(|e| e.to_string())?;
+
+        tx.commit().map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
     /// update indexed and total progress
     pub fn update_progress(id: i64, indexed: u64, total: u64) -> Result<usize, String> {
         let conn = open_conn()?;
@@ -385,23 +409,6 @@ impl AFolder {
         // return the newly inserted folder
         let new_folder = Self::fetch(folder_path)?;
         Ok(new_folder.unwrap())
-    }
-
-    /// rename a folder (update path and name)
-    pub fn rename_folder(old_path: &str, new_path: &str) -> Result<usize, String> {
-        // get folder name
-        let folder_name = t_utils::get_file_name(new_path);
-
-        let conn = open_conn()?;
-        let result = conn
-            .execute(
-                "UPDATE afolders
-                SET path = CONCAT(?2, SUBSTRING(path, LENGTH(?1) + 1)), name = ?3
-                WHERE path LIKE ?1 || '%'",
-                params![old_path, new_path, folder_name],
-            )
-            .map_err(|e| e.to_string())?;
-        Ok(result)
     }
 
     /// move a folder (update path and album_id)

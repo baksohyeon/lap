@@ -128,6 +128,7 @@
                 :albumId="album.id"
                 :rootPath="album.path"
                 :allowContextMenu="isMainPane"
+                @root-renamed="handleRootRenamed"
               />
             </div>
           </transition>
@@ -478,6 +479,13 @@ const refreshAlbums = async () => {
     selection.folderPath.value = "";
     selection.selected.value = false;
   }
+};
+
+const handleRootRenamed = (payload: { albumId: number; newPath: string }) => {
+  const album = albums.value.find((item: any) => item.id === payload.albumId);
+  if (!album) return;
+
+  album.path = payload.newPath;
 };
 
 /// edit album information or add new album

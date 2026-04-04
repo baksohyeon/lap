@@ -257,8 +257,8 @@ pub fn rename_folder(folder_path: &str, new_folder_name: &str) -> Option<String>
 
     match new_folder_path {
         Some(new_path) => {
-            if let Err(e) = AFolder::rename_folder(folder_path, &new_path) {
-                eprintln!("Error while renaming folder: {}", e);
+            if let Err(e) = Album::rename_root_folder(folder_path, &new_path) {
+                eprintln!("Error while renaming root folder in DB: {}", e);
                 return None;
             }
             Some(new_path)
