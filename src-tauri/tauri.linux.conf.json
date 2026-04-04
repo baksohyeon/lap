@@ -1,0 +1,13 @@
+{
+  "app": {
+    "windows": [
+      {
+        "minWidth": 800,
+        "minHeight": 600,
+        "decorations": false,
+        "transparent": true,
+        "dragDropEnabled": false
+      }
+    ]
+  }
+}

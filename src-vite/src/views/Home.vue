@@ -11,7 +11,7 @@
     </transition>
 
     <!-- Title Bar -->
-    <TitleBar v-if="isWin" titlebar="Lap" viewName="Home" :icon="iconLogo"/>
+    <TitleBar v-if="showDesktopTitleBar" titlebar="Lap" viewName="Home" :icon="iconLogo"/>
 
     <!-- Main Content -->
     <div class="flex-1 flex overflow-hidden">
@@ -131,7 +131,7 @@
       <div 
         :class="[
           'flex-1 flex relative',
-          isWin ? 'rounded-tl-box' : '',
+          showDesktopTitleBar ? 'rounded-tl-box' : '',
         ]"
       >
         <Content :titlebar="buttons[config.main.sidebarIndex].text"/>
@@ -162,7 +162,7 @@ import { getName } from '@tauri-apps/api/app';
 import { config, libConfig } from '@/common/config';
 import { useAppUpdater } from '@/common/updater';
 import { useUIStore } from '@/stores/uiStore';
-import { isWin, isMac, SCALE_VALUES } from '@/common/utils';
+import { isWin, isMac, isLinux, SCALE_VALUES } from '@/common/utils';
 import { getAppConfig, switchLibrary, cancelIndexing, cancelFaceIndex } from '@/common/api';
 
 // vue components
@@ -231,6 +231,7 @@ const currentLibrary = computed(() =>
 
 // Manage Libraries dialog state
 const showManageLibraries = ref(false);
+const showDesktopTitleBar = isWin || isLinux;
 
 /// Splitter for resizing the left pane
 const isDraggingSplitter = ref(false);

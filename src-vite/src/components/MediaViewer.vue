@@ -14,7 +14,7 @@
       data-tauri-drag-region
     >
       <!-- App Icon + Title (left side, ImageViewer on Windows) -->
-      <div v-if="isWin && mode === 2 && showWindowControlsBar" class="absolute left-0 top-0 h-10 flex items-center px-3 select-none" data-tauri-drag-region>
+      <div v-if="showDesktopWindowControls && mode === 2 && showWindowControlsBar" class="absolute left-0 top-0 h-10 flex items-center px-3 select-none" data-tauri-drag-region>
         <img :src="iconLogo" class="w-5 h-5 mr-2 rounded" data-tauri-drag-region />
         <span class="text-nowrap text-sm text-base-content/70 overflow-hidden whitespace-pre text-ellipsis" data-tauri-drag-region>
           {{ $t('image_viewer.title') }}
@@ -202,7 +202,7 @@
     </div>
 
     <!-- Window Control Buttons (top-right) -->
-    <div v-if="showWindowControlsBar && showWindowControls && isWin" class="absolute top-0 right-0 z-90 flex items-center" @mousedown.stop>
+    <div v-if="showWindowControlsBar && showWindowControls && showDesktopWindowControls" class="absolute top-0 right-0 z-90 flex items-center" @mousedown.stop>
       <IconWinMinus 
         class="p-3 w-12 h-10 text-base-content/70 hover:text-base-content hover:bg-base-100 transition-colors duration-300 cursor-pointer" 
         @click.stop="minimizeWindow" 
@@ -325,7 +325,7 @@ import { useI18n } from 'vue-i18n';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { config, libConfig } from '@/common/config';
 import { useToast } from '@/common/toast';
-import { isWin, getSlideShowInterval } from '@/common/utils';
+import { isWin, isLinux, getSlideShowInterval } from '@/common/utils';
 
 import Image from '@/components/Image.vue';
 import TButton from '@/components/TButton.vue';
@@ -510,22 +510,23 @@ const filenameMaxWidth = computed(() => {
 });
 const showExtraIcons = computed(() => containerWidth.value > 600);
 // Window control state (Windows + ImageViewer mode)
-const winAppWindow = isWin ? getCurrentWindow() : null;
+const showDesktopWindowControls = isWin || isLinux;
+const desktopAppWindow = showDesktopWindowControls ? getCurrentWindow() : null;
 const isMaximized = ref(false);
 
-const minimizeWindow = () => winAppWindow?.minimize();
+const minimizeWindow = () => desktopAppWindow?.minimize();
 const toggleMaximizeWindow = () => {
-  winAppWindow?.isMaximized().then((maximized) => {
+  desktopAppWindow?.isMaximized().then((maximized) => {
     if (maximized) {
       isMaximized.value = false;
-      winAppWindow?.unmaximize();
+      desktopAppWindow?.unmaximize();
     } else {
       isMaximized.value = true;
-      winAppWindow?.maximize();
+      desktopAppWindow?.maximize();
     }
   });
 };
-const closeWindow = () => winAppWindow?.close();
+const closeWindow = () => desktopAppWindow?.close();
 const effectiveSlideShowIntervalIndex = computed(() => {
   return props.slideShowIntervalIndex ?? config.settings.slideShowInterval;
 });
@@ -622,7 +623,7 @@ const showStatusBadges = computed(() => {
 });
 
 const showWindowControlsBar = computed(() => {
-  return props.showToolbar && !(isWin && props.mode === 2 && props.isFullScreen);
+  return props.showToolbar && !(showDesktopWindowControls && props.mode === 2 && props.isFullScreen);
 });
 let resizeObserver: ResizeObserver | null = null;
 const updateNavButtonsTop = () => {
