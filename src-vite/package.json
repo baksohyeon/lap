@@ -7,7 +7,10 @@
     "dev": "vite --config vite.config.js",
     "dev:clean": "vite --config vite.config.js --force",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "format": "prettier --write src/",
+    "format:check": "prettier --check src/",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@aptabase/tauri": "^0.4.1",
